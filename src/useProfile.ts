@@ -22,5 +22,27 @@ export function useProfile() {
     localStorage.setItem('studia_profile_v1', JSON.stringify(newProfile));
   };
 
-  return { profile, isLoaded, saveProfile };
+  const addClassSession = (session: Omit<import('./types').ClassSession, 'id'>) => {
+    if (!profile) return;
+    const newSession = { ...session, id: crypto.randomUUID() };
+    saveProfile({ ...profile, classTimetable: [...profile.classTimetable, newSession] });
+  };
+
+  const updateClassSession = (id: string, updatedSession: Omit<import('./types').ClassSession, 'id'>) => {
+    if (!profile) return;
+    saveProfile({
+      ...profile,
+      classTimetable: profile.classTimetable.map(s => s.id === id ? { ...updatedSession, id } : s)
+    });
+  };
+
+  const deleteClassSession = (id: string) => {
+    if (!profile) return;
+    saveProfile({
+      ...profile,
+      classTimetable: profile.classTimetable.filter(s => s.id !== id)
+    });
+  };
+
+  return { profile, isLoaded, saveProfile, addClassSession, updateClassSession, deleteClassSession };
 }

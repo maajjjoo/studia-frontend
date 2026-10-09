@@ -7,6 +7,7 @@ import { useFocus } from "./useFocus";
 import { useAi } from "./useAi";
 import { useProfile } from "./useProfile";
 import { OnboardingScreen } from "./OnboardingScreen";
+import { TimetableScreen } from "./TimetableScreen";
 import { Task, Priority, Activity, ActivityCategory, FocusSession, AiMessage } from "./types";
 
 // Extracted SVGs (Spark, Bell, Play, Pause, Reset)
@@ -247,10 +248,21 @@ function Home({ profile, tasks, activities, focus, onNavigate, onOpenNewTask, on
   const formattedDate = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(todayDateObj);
   const localTodayStr = new Date(todayDateObj.getTime() - (todayDateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-  const upcomingActivities = activities
-    .filter((a: Activity) => a.date >= localTodayStr)
-    .sort((a: Activity, b: Activity) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`))
-    .slice(0, 2);
+  const todayDayOfWeek = todayDateObj.getDay() || 7; // 1-7
+  
+  const todayClasses = profile?.classTimetable?.filter((c: any) => c.dayOfWeek === todayDayOfWeek).map((c: any) => ({
+    id: `class-${c.id}`,
+    title: c.subject,
+    date: localTodayStr,
+    startTime: c.startTime,
+    endTime: c.endTime,
+    category: 'class_session'
+  })) || [];
+
+  const upcomingActivities = [...activities, ...todayClasses]
+    .filter((a: any) => a.date >= localTodayStr)
+    .sort((a: any, b: any) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`))
+    .slice(0, 3);
 
   const getPriorityLabel = (p: string) => p === 'high' ? 'Alta' : p === 'medium' ? 'Media' : 'Baja';
 
@@ -362,12 +374,12 @@ function Home({ profile, tasks, activities, focus, onNavigate, onOpenNewTask, on
             </div>
             <div className="mini-agenda">
               <h4>Próximamente</h4>
-              {upcomingActivities.length > 0 ? upcomingActivities.map((a: Activity) => (
+              {upcomingActivities.length > 0 ? upcomingActivities.map((a: any) => (
                 <div key={a.id} className="mini-agenda-item">
                   <span className="mini-agenda-time">{a.startTime}</span>
                   <div className="mini-agenda-info">
                     <h5>{a.title}</h5>
-                    <p>{a.category === 'class' ? 'Clase' : a.category === 'exam' ? 'Examen' : a.category === 'assignment' ? 'Tarea' : 'Personal'}</p>
+                    <p>{a.category === 'class_session' ? 'Clase Recurrente' : a.category === 'class' ? 'Clase' : a.category === 'exam' ? 'Examen' : a.category === 'assignment' ? 'Tarea' : 'Personal'}</p>
                   </div>
                 </div>
               )) : <p style={{fontSize: '0.8rem'}}>No hay eventos próximos.</p>}
@@ -942,7 +954,7 @@ function SettingsScreen({ theme, onChangeTheme }: any) {
 function App() {
   const [activeTab, setActiveTab] = useState("inicio");
   const { theme, changeTheme } = useTheme();
-  const { profile, isLoaded: profileLoaded, saveProfile } = useProfile();
+  const { profile, isLoaded: profileLoaded, saveProfile, addClassSession, updateClassSession, deleteClassSession } = useProfile();
   const { tasks, isLoaded: tasksLoaded, addTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
   const { activities, isScheduleLoaded, addActivity, updateActivity, deleteActivity } = useSchedule();
   const focus = useFocus();
@@ -961,6 +973,7 @@ function App() {
     switch (activeTab) {
       case "inicio": return <Home profile={profile} tasks={tasks} activities={activities} focus={focus} onNavigate={setActiveTab} onOpenNewTask={() => setIsTaskModalOpen(true)} onOpenNewActivity={() => setIsActivityModalOpen(true)} onToggleTask={toggleTaskStatus} />;
       case "tareas": return <TasksScreen tasks={tasks} onAdd={addTask} onUpdate={updateTask} onDelete={deleteTask} onToggle={toggleTaskStatus} />;
+      case "horario": return <TimetableScreen profile={profile} onAddClass={addClassSession} onUpdateClass={updateClassSession} onDeleteClass={deleteClassSession} onUpdateProfile={saveProfile} />;
       case "calendario": return <CalendarScreen activities={activities} onAdd={addActivity} onUpdate={updateActivity} onDelete={deleteActivity} />;
       case "enfoque": return <FocusScreen focus={focus} />;
       case "asistente": return <AiScreen profile={profile} ai={ai} tasks={tasks} activities={activities} focus={focus} />;
@@ -982,6 +995,7 @@ function App() {
         <nav className="nav-links">
           <button className={`nav-item ${activeTab === "inicio" ? "active" : ""}`} onClick={() => setActiveTab("inicio")}><Icons.Home /> Inicio</button>
           <button className={`nav-item ${activeTab === "tareas" ? "active" : ""}`} onClick={() => setActiveTab("tareas")}><Icons.CheckSquare /> Tareas</button>
+          <button className={`nav-item ${activeTab === "horario" ? "active" : ""}`} onClick={() => setActiveTab("horario")}><Icons.Book /> Horario</button>
           <button className={`nav-item ${activeTab === "calendario" ? "active" : ""}`} onClick={() => setActiveTab("calendario")}><Icons.Calendar /> Calendario</button>
           <button className={`nav-item ${activeTab === "enfoque" ? "active" : ""}`} onClick={() => setActiveTab("enfoque")}><Icons.TrendingUp /> Enfoque</button>
           <button className={`nav-item ${activeTab === "asistente" ? "active" : ""}`} onClick={() => setActiveTab("asistente")}><SparkIcon /> Asistente IA</button>

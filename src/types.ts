@@ -45,10 +45,12 @@ export interface AiMessage {
 export interface ClassSession {
   id: string;
   subject: string;
+  description?: string;
   dayOfWeek: number; // 1 = Monday, 7 = Sunday
   startTime: string; // HH:mm
   endTime: string;
   room?: string;
+  teacher?: string;
 }
 
 export interface UnavailableBlock {
