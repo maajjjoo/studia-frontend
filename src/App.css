@@ -1,0 +1,57 @@
+:root {
+  /* Default/Blue Theme Variables */
+  --color-primary: #244A78;
+  --color-primary-hover: #1B385C;
+  --color-primary-soft: #E2EAF4;
+
+  /* Burgundy Theme Variables (For future use) */
+  --color-alt-primary: #762D43;
+  --color-alt-primary-hover: #5D2234;
+  --color-alt-primary-soft: #F1E0E5;
+
+  /* Base colors */
+  --color-text: #0f0f0f;
+  --color-background: #f6f6f6;
+
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+
+  color: var(--color-text);
+  background-color: var(--color-background);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #f6f6f6;
+    --color-background: #2f2f2f;
+  }
+}
+
+.container {
+  margin: 0;
+  padding-top: 10vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+h1 {
+  color: var(--color-primary);
+  margin-bottom: 0.5rem;
+}
+
+p {
+  color: var(--color-text);
+  opacity: 0.8;
+}
