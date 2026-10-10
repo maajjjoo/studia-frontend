@@ -145,11 +145,11 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
           <label className="form-label">Tema visual</label>
           <div className="theme-selector" style={{gridTemplateColumns: '1fr 1fr'}}>
             <div className={`theme-card ${theme === 'rose' ? 'active' : ''}`} onClick={() => onChangeTheme('rose')}>
-              <div className="theme-preview" style={{background: '#FFF5F7'}}><div className="tp-a1" style={{background: '#FF8FAB'}}></div><div className="tp-a2" style={{background: '#FFEBF0'}}></div></div>
+              <div className="theme-preview" style={{background: '#FDF3F5'}}><div className="tp-a1" style={{background: '#D48E9B'}}></div><div className="tp-a2" style={{background: '#F8F9FA'}}></div></div>
               <span style={{fontWeight: 600, fontSize: '0.85rem'}}>Rosa Monocromático</span>
             </div>
             <div className={`theme-card ${theme === 'blue' ? 'active' : ''}`} onClick={() => onChangeTheme('blue')}>
-              <div className="theme-preview" style={{background: '#F0F8FF'}}><div className="tp-b1" style={{background: '#38BDF8'}}></div><div className="tp-b2" style={{background: '#E0F2FE'}}></div></div>
+              <div className="theme-preview" style={{background: '#F3F8FC'}}><div className="tp-b1" style={{background: '#7FA3C1'}}></div><div className="tp-b2" style={{background: '#F8F9FA'}}></div></div>
               <span style={{fontWeight: 600, fontSize: '0.85rem'}}>Azul Monocromático</span>
             </div>
           </div>

@@ -13,34 +13,6 @@ import { SettingsScreen } from "./SettingsScreen";
 import { Task, Priority, Activity, ActivityCategory, FocusSession, AiMessage } from "./types";
 
 // Extracted SVGs (Spark, Bell, Play, Pause, Reset)
-const SparkIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
-  </svg>
-);
-const BellIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-  </svg>
-);
-const PlayIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-  </svg>
-);
-const PauseIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="6" y="4" width="4" height="16"></rect>
-    <rect x="14" y="4" width="4" height="16"></rect>
-  </svg>
-);
-const ResetIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-    <path d="M3 3v5h5"></path>
-  </svg>
-);
 
 // --- Hooks ---
 function useTheme() {
@@ -314,7 +286,7 @@ function Home({ profile, tasks, activities, focus, onNavigate, onOpenNewTask, on
             <span className="date-label">Hoy</span>
             <span className="date-value">{formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1)}</span>
           </div>
-          <button className="icon-circle"><BellIcon /></button>
+          <button className="icon-circle"><Icons.Bell /></button>
           <div className="icon-circle" style={{background: 'var(--color-accent-soft)', color: 'var(--color-accent-main)', fontWeight: 700}}>{profile ? getInitials(profile.name) : 'ST'}</div>
         </div>
       </div>
@@ -323,8 +295,8 @@ function Home({ profile, tasks, activities, focus, onNavigate, onOpenNewTask, on
         <span className="quick-label">Acciones rápidas</span>
         <button className="action-pill" onClick={onOpenNewTask}><Icons.Plus /> Nueva tarea</button>
         <button className="action-pill" onClick={onOpenNewActivity}><Icons.Calendar /> Añadir evento</button>
-        <button className="action-pill" onClick={() => { if(!focus.isRunning) focus.start(); onNavigate("enfoque"); }}><PlayIcon /> Iniciar enfoque</button>
-        <button className="action-pill" onClick={() => onNavigate("asistente")}><SparkIcon /> Consultar IA</button>
+        <button className="action-pill" onClick={() => { if(!focus.isRunning) focus.start(); onNavigate("enfoque"); }}><Icons.Play /> Iniciar enfoque</button>
+        <button className="action-pill" onClick={() => onNavigate("asistente")}><Icons.Spark /> Consultar IA</button>
       </div>
 
       <div className="dashboard-grid">
@@ -434,11 +406,11 @@ function Home({ profile, tasks, activities, focus, onNavigate, onOpenNewTask, on
             </div>
             <div className="timer-controls" onClick={e => e.stopPropagation()}>
               {focus.isRunning ? (
-                <button className="btn-play" onClick={focus.pause}><PauseIcon /></button>
+                <button className="btn-play" onClick={focus.pause}><Icons.Pause /></button>
               ) : (
-                <button className="btn-play" onClick={focus.start}><PlayIcon /></button>
+                <button className="btn-play" onClick={focus.start}><Icons.Play /></button>
               )}
-              <button className="btn-reset" onClick={focus.reset}><ResetIcon /></button>
+              <button className="btn-reset" onClick={focus.reset}><Icons.Reset /></button>
             </div>
           </div>
         </div>
@@ -657,11 +629,11 @@ function FocusScreen({ focus }: any) {
 
           <div className="focus-actions">
             {focus.isRunning ? (
-              <button className="btn-focus-action active" onClick={focus.pause}><PauseIcon /> Pausar</button>
+              <button className="btn-focus-action active" onClick={focus.pause}><Icons.Pause /> Pausar</button>
             ) : (
-              <button className="btn-focus-action" onClick={focus.start}><PlayIcon /> Iniciar</button>
+              <button className="btn-focus-action" onClick={focus.start}><Icons.Play /> Iniciar</button>
             )}
-            <button className="btn-focus-action outline" onClick={focus.reset}><ResetIcon /> Reiniciar</button>
+            <button className="btn-focus-action outline" onClick={focus.reset}><Icons.Reset /> Reiniciar</button>
           </div>
         </div>
 
@@ -744,8 +716,8 @@ function AiScreen({ profile, ai, tasks, activities, focus }: any) {
         <div className="ai-messages-area">
           {ai.messages.length === 0 && (
             <div className="ai-empty-state">
-              <div style={{ background: 'var(--card-ai-bg)', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: '#8A4F4F' }}>
-                <SparkIcon />
+              <div style={{ background: 'var(--card-ai-bg)', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'var(--color-accent-main)' }}>
+                <Icons.Spark />
               </div>
               <h3 style={{fontSize: '1.5rem'}}>¿En qué te puedo ayudar hoy, {firstName}?</h3>
               <p>Puedes pedirme que estructure tus tareas, planifique tu semana o te explique un concepto difícil.</p>
@@ -786,7 +758,7 @@ function AiScreen({ profile, ai, tasks, activities, focus }: any) {
             rows={2}
           />
           <button className="ai-send-btn" onClick={() => handleSend()} disabled={!input.trim() || ai.isLoading}>
-            <SparkIcon />
+            <Icons.Spark />
           </button>
         </div>
       </div>
@@ -968,7 +940,7 @@ function App() {
           <button className={`nav-item ${activeTab === "horario" ? "active" : ""}`} onClick={() => setActiveTab("horario")}><Icons.Book /> Horario</button>
           <button className={`nav-item ${activeTab === "calendario" ? "active" : ""}`} onClick={() => setActiveTab("calendario")}><Icons.Calendar /> Calendario</button>
           <button className={`nav-item ${activeTab === "enfoque" ? "active" : ""}`} onClick={() => setActiveTab("enfoque")}><Icons.TrendingUp /> Enfoque</button>
-          <button className={`nav-item ${activeTab === "asistente" ? "active" : ""}`} onClick={() => setActiveTab("asistente")}><SparkIcon /> Asistente IA</button>
+          <button className={`nav-item ${activeTab === "asistente" ? "active" : ""}`} onClick={() => setActiveTab("asistente")}><Icons.Spark /> Asistente IA</button>
           <button className={`nav-item ${activeTab === "progreso" ? "active" : ""}`} onClick={() => setActiveTab("progreso")}><Icons.Activity /> Progreso</button>
           <button className={`nav-item ${activeTab === "ajustes" ? "active" : ""}`} onClick={() => setActiveTab("ajustes")}><Icons.Settings /> Ajustes</button>
         </nav>
