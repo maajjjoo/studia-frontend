@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { StudentProfile } from './types';
 
@@ -14,6 +14,8 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
   const [isDirty, setIsDirty] = useState(false);
   const [newSubject, setNewSubject] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('general');
 
   useEffect(() => {
     setFormData(profile);
@@ -28,7 +30,10 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
   const handlePreferencesChange = (field: string, value: number) => {
     setFormData(prev => ({
       ...prev,
-      studyPreferences: { ...prev.studyPreferences, [field]: value }
+      studyPreferences: {
+        ...prev.studyPreferences,
+        [field]: value
+      }
     }));
     setIsDirty(true);
   };
@@ -45,22 +50,22 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
     handleChange('subjects', formData.subjects.filter(s => s !== sub));
   };
 
-  const [error, setError] = useState('');
-
   const handleSave = () => {
     setError('');
-    
-    // Check if any removed subject is still used in the timetable
     const removedSubjects = profile.subjects.filter(s => !formData.subjects.includes(s));
     for (const sub of removedSubjects) {
       const isUsed = formData.classTimetable?.some(c => c.subject === sub);
       if (isUsed) {
-        setError(`No puedes eliminar la materia "${sub}" porque está asignada a una clase en tu Horario. Edita o elimina la clase primero.`);
+        setError(`No puedes eliminar la materia "${sub}" porque está asignada a una clase en el horario.`);
         return;
       }
     }
-
-    setShowConfirm(true);
+    
+    if (removedSubjects.length > 0 || (profile.studyAvailability !== formData.studyAvailability)) {
+      setShowConfirm(true);
+    } else {
+      confirmSave();
+    }
   };
 
   const confirmSave = () => {
@@ -82,133 +87,215 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
   const updateAvailability = (index: number, field: string, value: string) => {
     const newAvail = [...(formData.studyAvailability || [])];
-    newAvail[index] = { ...newAvail[index], [field]: value };
+    (newAvail[index] as any)[field] = field === 'dayOfWeek' ? parseInt(value) : value;
     handleChange('studyAvailability', newAvail);
   };
 
   const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
   return (
-    <div className="main-content" style={{paddingBottom: '4rem'}}>
-      <div className="screen-header">
+    <div className="main-content" style={{paddingBottom: '4rem', display: 'flex', flexDirection: 'column'}}>
+      <div className="screen-header" style={{borderBottom: 'none', paddingBottom: 0, marginBottom: '2rem'}}>
         <div>
-          <h1>Ajustes Académicos</h1>
-          <p>Configura tu perfil, preferencias de estudio y disponibilidad.</p>
+          <h1 style={{margin: '0 0 0.5rem 0'}}>Ajustes</h1>
+          <p style={{color: 'var(--color-text-muted)', margin: 0}}>Administra tus preferencias y personaliza tu espacio de Studia.</p>
         </div>
         {isDirty && (
           <div style={{display: 'flex', gap: '1rem'}}>
-            <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={() => { setFormData(profile); setIsDirty(false); }}>Cancelar</button>
+            <button className="btn btn-secondary" onClick={() => { setFormData(profile); setIsDirty(false); }}>Cancelar</button>
             <button className="btn btn-primary" onClick={handleSave}>Guardar cambios</button>
           </div>
         )}
       </div>
 
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem'}}>
-        {error && (
-          <div style={{gridColumn: '1 / -1', background: 'var(--prio-high-bg)', color: 'var(--prio-high-text)', padding: '1rem', borderRadius: 'var(--radius-sm)'}}>
-            <strong>Error de validación:</strong> {error}
-          </div>
-        )}
-        {/* Perfil */}
-        <div className="dash-card">
-          <h3 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}><Icons.Users /> Perfil del Estudiante</h3>
-          <div className="form-group">
-            <label className="form-label">Nombre completo</label>
-            <input type="text" className="form-input" value={formData.name} onChange={e => handleChange('name', e.target.value)} />
-          </div>
-          <div style={{display: 'flex', gap: '1rem'}}>
-            <div className="form-group" style={{flex: 2}}>
-              <label className="form-label">Carrera / Programa</label>
-              <input type="text" className="form-input" value={formData.program} onChange={e => handleChange('program', e.target.value)} />
-            </div>
-            <div className="form-group" style={{flex: 1}}>
-              <label className="form-label">Semestre</label>
-              <input type="text" className="form-input" value={formData.semester} onChange={e => handleChange('semester', e.target.value)} />
-            </div>
-          </div>
+      {error && (
+        <div style={{background: 'var(--color-destructive)', color: '#fff', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '2rem'}}>
+          <strong>Error de validación:</strong> {error}
+        </div>
+      )}
+
+      <div style={{display: 'flex', gap: '4rem', flex: 1}}>
+        {/* Left Navigation */}
+        <div style={{width: '240px', display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
+          <button className={`nav-item ${activeTab === 'general' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('general')}>
+            <Icons.Settings /> General
+          </button>
+          <button className={`nav-item ${activeTab === 'notificaciones' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('notificaciones')}>
+            <Icons.Bell /> Notificaciones
+          </button>
+          <button className={`nav-item ${activeTab === 'apariencia' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('apariencia')}>
+            <Icons.Database /> Apariencia
+          </button>
+          <button className={`nav-item ${activeTab === 'academico' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('academico')}>
+            <Icons.Book /> Académico
+          </button>
+          <button className={`nav-item ${activeTab === 'privacidad' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('privacidad')}>
+            <Icons.Shield /> Privacidad
+          </button>
+          <button className={`nav-item ${activeTab === 'datos' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('datos')}>
+            <Icons.Database /> Datos y respaldo
+          </button>
         </div>
 
-        {/* Preferencias y Tema */}
-        <div className="dash-card">
-          <h3 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}><Icons.Settings /> Preferencias y Apariencia</h3>
-          <div style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem'}}>
-            <div className="form-group" style={{flex: 1}}>
-              <label className="form-label">Duración Pomodoro (min)</label>
-              <input type="number" className="form-input" value={formData.studyPreferences?.preferredSessionDuration || 25} onChange={e => handlePreferencesChange('preferredSessionDuration', parseInt(e.target.value))} />
-            </div>
-            <div className="form-group" style={{flex: 1}}>
-              <label className="form-label">Descanso corto (min)</label>
-              <input type="number" className="form-input" value={formData.studyPreferences?.preferredBreakDuration || 5} onChange={e => handlePreferencesChange('preferredBreakDuration', parseInt(e.target.value))} />
-            </div>
-          </div>
-
-          <label className="form-label">Tema visual</label>
-          <div className="theme-selector" style={{gridTemplateColumns: '1fr 1fr'}}>
-            <div className={`theme-card ${theme === 'rose' ? 'active' : ''}`} onClick={() => onChangeTheme('rose')}>
-              <div className="theme-preview" style={{background: '#FDF3F5'}}><div className="tp-a1" style={{background: '#D48E9B'}}></div><div className="tp-a2" style={{background: '#F8F9FA'}}></div></div>
-              <span style={{fontWeight: 600, fontSize: '0.85rem'}}>Rosa Monocromático</span>
-            </div>
-            <div className={`theme-card ${theme === 'blue' ? 'active' : ''}`} onClick={() => onChangeTheme('blue')}>
-              <div className="theme-preview" style={{background: '#F3F8FC'}}><div className="tp-b1" style={{background: '#7FA3C1'}}></div><div className="tp-b2" style={{background: '#F8F9FA'}}></div></div>
-              <span style={{fontWeight: 600, fontSize: '0.85rem'}}>Azul Monocromático</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Materias */}
-        <div className="dash-card">
-          <h3 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}><Icons.Book /> Materias Inscritas</h3>
-          <p style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Añade las asignaturas que cursas actualmente.</p>
-          <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1rem'}}>
-            <input type="text" className="form-input" value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="Ej. Álgebra Lineal" onKeyDown={e => e.key === 'Enter' && addSubject()} />
-            <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={addSubject}><Icons.Plus /> Añadir</button>
-          </div>
-          <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
-            {formData.subjects.map(s => (
-              <span key={s} className="badge" style={{display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem', padding: '0.4rem 0.75rem', background: 'var(--color-bg-base)'}}>
-                {s}
-                <button style={{background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--color-text-muted)'}} onClick={() => removeSubject(s)}><Icons.Close /></button>
-              </span>
-            ))}
-          </div>
-
-          <div style={{marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border)'}}>
-            <h4 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}><Icons.Calendar /> Horario de Clases</h4>
-            <p style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tienes {formData.classTimetable?.length || 0} clases registradas en tu semana.</p>
-            <p style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>La gestión de clases, cruces y aulas se realiza en la sección dedicada de Horario.</p>
-          </div>
-        </div>
-
-        {/* Disponibilidad */}
-        <div className="dash-card">
-          <h3 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}><Icons.Clock /> Disponibilidad de Estudio</h3>
-          <p style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Agrega tus ventanas de tiempo libres. El planificador deducirá tus clases automáticamente.</p>
+        {/* Right Content */}
+        <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '2.5rem', paddingRight: '1rem'}}>
           
-          <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
-            {(formData.studyAvailability || []).map((avail, i) => (
-              <div key={i} style={{display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'var(--color-bg-base)', padding: '0.5rem', borderRadius: 'var(--radius-sm)'}}>
-                <select className="form-select" style={{flex: 1, padding: '0.4rem'}} value={avail.dayOfWeek} onChange={e => updateAvailability(i, 'dayOfWeek', e.target.value)}>
-                  {days.map((d, idx) => <option key={d} value={idx + 1}>{d}</option>)}
-                </select>
-                <input type="time" className="form-input" style={{width: '90px', padding: '0.4rem'}} value={avail.startTime} onChange={e => updateAvailability(i, 'startTime', e.target.value)} />
-                <span style={{color: 'var(--color-text-muted)'}}>-</span>
-                <input type="time" className="form-input" style={{width: '90px', padding: '0.4rem'}} value={avail.endTime} onChange={e => updateAvailability(i, 'endTime', e.target.value)} />
-                <button className="btn btn-secondary" style={{padding: '0.4rem', color: 'var(--color-destructive)', display: 'flex', alignItems: 'center', justifyContent: 'center'}} onClick={() => removeAvailability(i)}><Icons.Trash /></button>
-              </div>
-            ))}
-            
-            <div style={{marginTop: '0.5rem', display: 'flex', gap: '0.5rem'}}>
-              <select id="new-avail-day" className="form-select" style={{flex: 1}}>
-                {days.map((d, idx) => <option key={d} value={idx + 1}>{d}</option>)}
-              </select>
-              <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={() => {
-                const day = parseInt((document.getElementById('new-avail-day') as HTMLSelectElement).value);
-                addAvailability(day);
-              }}><Icons.Plus /> Añadir ventana</button>
-            </div>
-          </div>
-        </div>
+          {activeTab === 'general' && (
+            <>
+              {/* Account Section */}
+              <div>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Cuenta</h4>
+                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                  
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
+                    <div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Nombre de usuario</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tu identidad visible en Studia.</div>
+                    </div>
+                    <input type="text" className="form-input" style={{width: '250px'}} value={formData.name} onChange={e => handleChange('name', e.target.value)} />
+                  </div>
 
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
+                    <div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Programa académico</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>La carrera o grado que estudias.</div>
+                    </div>
+                    <input type="text" className="form-input" style={{width: '250px'}} value={formData.program} onChange={e => handleChange('program', e.target.value)} />
+                  </div>
+
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Semestre actual</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tu nivel de progreso actual.</div>
+                    </div>
+                    <input type="text" className="form-input" style={{width: '250px'}} value={formData.semester} onChange={e => handleChange('semester', e.target.value)} />
+                  </div>
+
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'apariencia' && (
+            <>
+              {/* Theme Section */}
+              <div>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Tema y Estilo</h4>
+                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                  
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Paleta de colores</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Selecciona el acento principal de la interfaz.</div>
+                    </div>
+                    
+                    <div style={{display: 'flex', gap: '1rem'}}>
+                      <div className={`theme-card ${theme === 'rose' ? 'active' : ''}`} style={{width: '120px'}} onClick={() => onChangeTheme('rose')}>
+                        <div className="theme-preview" style={{background: '#FDF3F5'}}><div className="tp-a1" style={{background: '#D48E9B'}}></div><div className="tp-a2" style={{background: '#F8F9FA'}}></div></div>
+                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>Rosa</span>
+                      </div>
+                      <div className={`theme-card ${theme === 'blue' ? 'active' : ''}`} style={{width: '120px'}} onClick={() => onChangeTheme('blue')}>
+                        <div className="theme-preview" style={{background: '#F3F8FC'}}><div className="tp-b1" style={{background: '#7FA3C1'}}></div><div className="tp-b2" style={{background: '#F8F9FA'}}></div></div>
+                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>Azul</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Preferences Section */}
+              <div>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Preferencias de Enfoque</h4>
+                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                  
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
+                    <div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Duración Pomodoro (min)</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tiempo para cada bloque de enfoque.</div>
+                    </div>
+                    <input type="number" className="form-input" style={{width: '100px'}} value={formData.studyPreferences?.preferredSessionDuration || 25} onChange={e => handlePreferencesChange('preferredSessionDuration', parseInt(e.target.value))} />
+                  </div>
+
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Descanso corto (min)</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Pausa entre sesiones de estudio.</div>
+                    </div>
+                    <input type="number" className="form-input" style={{width: '100px'}} value={formData.studyPreferences?.preferredBreakDuration || 5} onChange={e => handlePreferencesChange('preferredBreakDuration', parseInt(e.target.value))} />
+                  </div>
+
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'academico' && (
+            <>
+              {/* Materias Section */}
+              <div>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Materias Inscritas</h4>
+                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                  
+                  <div style={{display: 'flex', gap: '0.5rem'}}>
+                    <input type="text" className="form-input" style={{flex: 1}} value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="Ej. Álgebra Lineal" onKeyDown={e => e.key === 'Enter' && addSubject()} />
+                    <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={addSubject}><Icons.Plus /> Añadir</button>
+                  </div>
+                  <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
+                    {formData.subjects.map(s => (
+                      <span key={s} className="badge" style={{display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem', padding: '0.4rem 0.75rem', background: 'var(--color-bg-base)'}}>
+                        {s}
+                        <button style={{background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--color-text-muted)'}} onClick={() => removeSubject(s)}><Icons.Close /></button>
+                      </span>
+                    ))}
+                    {formData.subjects.length === 0 && <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>No hay materias registradas.</span>}
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Disponibilidad Section */}
+              <div>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Disponibilidad de Estudio</h4>
+                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                  
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+                    {(formData.studyAvailability || []).map((avail, i) => (
+                      <div key={i} style={{display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'var(--color-bg-base)', padding: '0.5rem', borderRadius: 'var(--radius-sm)'}}>
+                        <select className="form-select" style={{flex: 1, padding: '0.4rem'}} value={avail.dayOfWeek} onChange={e => updateAvailability(i, 'dayOfWeek', e.target.value)}>
+                          {days.map((d, idx) => <option key={d} value={idx + 1}>{d}</option>)}
+                        </select>
+                        <input type="time" className="form-input" style={{width: '90px', padding: '0.4rem'}} value={avail.startTime} onChange={e => updateAvailability(i, 'startTime', e.target.value)} />
+                        <span style={{color: 'var(--color-text-muted)'}}>-</span>
+                        <input type="time" className="form-input" style={{width: '90px', padding: '0.4rem'}} value={avail.endTime} onChange={e => updateAvailability(i, 'endTime', e.target.value)} />
+                        <button className="btn btn-secondary" style={{padding: '0.4rem', color: 'var(--color-destructive)', display: 'flex', alignItems: 'center', justifyContent: 'center'}} onClick={() => removeAvailability(i)}><Icons.Trash /></button>
+                      </div>
+                    ))}
+                    
+                    <div style={{marginTop: '0.5rem', display: 'flex', gap: '0.5rem'}}>
+                      <select id="new-avail-day" className="form-select" style={{flex: 1}}>
+                        {days.map((d, idx) => <option key={d} value={idx + 1}>{d}</option>)}
+                      </select>
+                      <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={() => {
+                        const day = parseInt((document.getElementById('new-avail-day') as HTMLSelectElement).value);
+                        addAvailability(day);
+                      }}><Icons.Plus /> Añadir ventana</button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </>
+          )}
+
+          {(activeTab === 'privacidad' || activeTab === 'datos' || activeTab === 'notificaciones') && (
+            <div style={{textAlign: 'center', padding: '4rem 0', color: 'var(--color-text-muted)'}}>
+              <Icons.Database />
+              <p>Funciones en desarrollo para futuras actualizaciones.</p>
+            </div>
+          )}
+
+        </div>
       </div>
 
       {showConfirm && (
