@@ -27,7 +27,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
     setIsDirty(true);
   };
 
-  const handlePreferencesChange = (field: string, value: number) => {
+  const handlePreferencesChange = (field: keyof StudentProfile['studyPreferences'], value: any) => {
     setFormData(prev => ({
       ...prev,
       studyPreferences: {
@@ -125,7 +125,10 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
           </button>
           <button className={`nav-item ${activeTab === 'academico' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('academico')}>
             <Icons.Book /> Académico
-          </button>
+            </button>
+            <button className={`nav-item ${activeTab === 'enfoque' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('enfoque')}>
+              <Icons.Shield /> Modo Enfoque
+            </button>
         </div>
 
         {/* Right Content */}
@@ -271,6 +274,86 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                         const day = parseInt((document.getElementById('new-avail-day') as HTMLSelectElement).value);
                         addAvailability(day);
                       }}><Icons.Plus /> Añadir ventana</button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </>
+          )}
+
+
+          {activeTab === 'enfoque' && (
+            <>
+              <div>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Bloqueo de Aplicaciones</h4>
+                
+                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                  
+                  <div style={{background: 'rgba(var(--color-accent-soft-rgb), 0.08)', border: '1px solid rgba(var(--color-accent-soft-rgb), 0.2)', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start'}}>
+                    <span style={{color: 'var(--color-accent-soft)', width: '16px', height: '16px', display: 'flex', marginTop: '0.1rem'}}><Icons.Shield /></span>
+                    <div>
+                      <div style={{fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-main)', marginBottom: '0.25rem'}}>¿Qué es el Modo Enfoque Estricto?</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5'}}>
+                        El modo estricto cerrará automáticamente las aplicaciones seleccionadas si intentas abrirlas durante tu sesión de estudio.
+                        <br/><br/>
+                        <strong>Advertencia:</strong> Guarda cualquier trabajo pendiente en ellas antes de continuar. Esta función no bloquea sitios web y las aplicaciones podrán reabrirse al finalizar la sesión.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
+                    <div>
+                      <div style={{fontWeight: 600, color: 'var(--color-text-main)', fontSize: '0.95rem'}}>Activar Modo Estricto</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem'}}>Aplicar restricciones automáticamente al iniciar un Pomodoro.</div>
+                    </div>
+                    <label className="switch">
+                      <input type="checkbox" 
+                        checked={formData.studyPreferences?.strictFocusMode || false} 
+                        onChange={(e) => {
+                          handlePreferencesChange('strictFocusMode', e.target.checked);
+                          setIsDirty(true);
+                        }} 
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Aplicaciones Soportadas</h5>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                      {[
+                        { id: 'discord.exe', name: 'Discord' },
+                        { id: 'whatsapp.exe', name: 'WhatsApp' },
+                        { id: 'steam.exe', name: 'Steam' },
+                        { id: 'spotify.exe', name: 'Spotify' },
+                        { id: 'telegram.exe', name: 'Telegram' },
+                        { id: 'leagueclient.exe', name: 'League of Legends' }
+                      ].map(app => {
+                        const isSelected = (formData.studyPreferences?.restrictedApps || []).includes(app.id);
+                        return (
+                          <div key={app.id} style={{display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-bg-base)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'}}>
+                            <input 
+                              type="checkbox" 
+                              checked={isSelected}
+                              onChange={() => {
+                                const current = formData.studyPreferences?.restrictedApps || [];
+                                const updated = isSelected ? current.filter(id => id !== app.id) : [...current, app.id];
+                                handlePreferencesChange('restrictedApps', updated);
+                                setIsDirty(true);
+                              }}
+                              disabled={!(formData.studyPreferences?.strictFocusMode)}
+                              style={{cursor: 'pointer'}}
+                            />
+                            <div style={{flex: 1, fontWeight: 500, color: 'var(--color-text-main)', opacity: formData.studyPreferences?.strictFocusMode ? 1 : 0.5}}>
+                              {app.name}
+                            </div>
+                            <div style={{fontSize: '0.75rem', color: 'var(--color-text-muted)', fontFamily: 'monospace'}}>
+                              {app.id}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 

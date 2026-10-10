@@ -80,6 +80,8 @@ export interface StudentProfile {
   studyPreferences: {
     preferredSessionDuration: number; // minutes
     preferredBreakDuration: number; // minutes
+    strictFocusMode?: boolean;
+    restrictedApps?: string[];
   };
   studyAvailability: StudyAvailability[];
 }
