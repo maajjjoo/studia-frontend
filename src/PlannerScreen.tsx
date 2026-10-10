@@ -86,9 +86,9 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
         <div style={{flex: '1', display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: '350px'}}>
           
           <div className="dash-card">
-            <h3 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem'}}>
-              <Icons.CheckSquare /> Tareas a planificar
-            </h3>
+            <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+              <span style={{width: '18px', height: '18px', display: 'flex'}}><Icons.CheckSquare /></span> Tareas a planificar
+            </h4>
             
             {pendingTasksWithDuration.length > 0 ? (
               <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem'}}>
@@ -116,8 +116,8 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
           </div>
 
           {pendingTasksMissingDuration.length > 0 && (
-            <div style={{background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'flex-start'}}>
-              <div style={{color: 'var(--color-text-muted)', paddingTop: '0.1rem'}}><Icons.Activity /></div>
+            <div style={{background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start'}}>
+              <div style={{color: 'var(--color-text-muted)', paddingTop: '0.1rem', width: '16px', height: '16px', display: 'flex'}}><Icons.Activity /></div>
               <div>
                 <h4 style={{margin: '0 0 0.25rem 0', fontSize: '0.9rem'}}>Tareas omitidas</h4>
                 <p style={{margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5'}}>
@@ -128,7 +128,7 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
           )}
 
           <div className="dash-card" style={{background: 'var(--color-surface)', border: 'none', boxShadow: 'none'}}>
-            <button className="btn btn-primary" style={{width: '100%', justifyContent: 'center', padding: '0.85rem', fontSize: '1rem'}} onClick={handleGenerate} disabled={pendingTasksWithDuration.length === 0}>
+            <button className="btn btn-primary" style={{width: '100%', justifyContent: 'center'}} onClick={handleGenerate} disabled={pendingTasksWithDuration.length === 0}>
               <Icons.Spark /> {hasGenerated ? 'Regenerar Propuesta' : 'Generar Propuesta'}
             </button>
             <p style={{textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0.75rem 0 0 0'}}>
@@ -141,25 +141,21 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
         <div style={{flex: '1.5', display: 'flex', flexDirection: 'column'}}>
           {!hasGenerated ? (
             <div className="empty-state dash-card" style={{height: '100%', minHeight: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-              <div style={{color: 'var(--color-accent-soft)', marginBottom: '1rem', transform: 'scale(2)'}}>
-                <Icons.Calendar />
-              </div>
-              <h3 style={{fontSize: '1.2rem', marginBottom: '0.5rem'}}>Planificador en pausa</h3>
+              <Icons.Calendar />
+              <h3 style={{marginBottom: '0.5rem'}}>Planificador en pausa</h3>
               <p style={{maxWidth: '300px', margin: 0}}>Haz clic en "Generar Propuesta" para encontrar los mejores espacios de estudio en tu agenda.</p>
             </div>
           ) : activeProposals.length === 0 && !missingTime ? (
             <div className="empty-state dash-card" style={{height: '100%', minHeight: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-              <div style={{color: 'var(--color-accent-main)', marginBottom: '1rem', transform: 'scale(2)'}}>
-                <Icons.CheckSquare />
-              </div>
-              <h3 style={{fontSize: '1.2rem', marginBottom: '0.5rem'}}>¡Todo planificado!</h3>
+              <Icons.CheckSquare />
+              <h3 style={{marginBottom: '0.5rem'}}>¡Todo planificado!</h3>
               <p style={{maxWidth: '300px', margin: 0}}>Tus tareas pendientes ya están cubiertas o no tienes tareas por planificar.</p>
             </div>
           ) : (
             <div className="dash-card" style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem', marginBottom: '1.5rem'}}>
                 <div>
-                  <h3 style={{margin: '0 0 0.25rem 0', fontSize: '1.2rem'}}>Propuesta de estudio</h3>
+                  <h4 style={{margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)'}}>Propuesta de estudio</h4>
                   <p style={{margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Revisa los {activeProposals.length} bloques sugeridos antes de confirmar.</p>
                 </div>
                 <button className="btn btn-primary" onClick={handleSave} disabled={activeProposals.length === 0}>
@@ -168,8 +164,8 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
               </div>
 
               {missingTime && (
-                <div style={{background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'flex-start', marginBottom: '1.5rem'}}>
-                  <div style={{color: '#EF4444', paddingTop: '0.1rem'}}><Icons.Bell /></div>
+                <div style={{background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start', marginBottom: '1.5rem'}}>
+                  <div style={{color: '#EF4444', paddingTop: '0.1rem', width: '16px', height: '16px', display: 'flex'}}><Icons.Bell /></div>
                   <div>
                     <h4 style={{margin: '0 0 0.25rem 0', fontSize: '0.9rem', color: '#B91C1C'}}>Tiempo insuficiente</h4>
                     <p style={{margin: 0, fontSize: '0.85rem', color: '#991B1B', lineHeight: '1.5'}}>
@@ -199,8 +195,8 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
                       <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem', borderLeft: '1px solid var(--color-border)', paddingLeft: '1rem'}}>
                         <span style={{fontWeight: 600, color: 'var(--color-text-main)', fontSize: '0.95rem'}}>{p.taskTitle}</span>
                         <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)'}}>
-                          <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}><Icons.Clock /> {p.duration} min</span>
-                          {task && <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>• <Icons.Activity /> Prioridad {priorityLabels[task.priority]}</span>}
+                          <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}><span style={{width: '14px', height: '14px', display: 'flex'}}><Icons.Clock /></span> {p.duration} min</span>
+                          {task && <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>• <span style={{width: '14px', height: '14px', display: 'flex'}}><Icons.Activity /></span> Prioridad {priorityLabels[task.priority]}</span>}
                         </div>
                       </div>
                       
