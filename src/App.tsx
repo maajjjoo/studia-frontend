@@ -971,23 +971,12 @@ function App() {
                   <div className="avatar" style={{width: '32px', height: '32px', fontSize: '0.85rem'}}>{getInitials(profile.name)}</div>
                   <div style={{display: 'flex', flexDirection: 'column'}}>
                     <span style={{fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-main)'}}>{profile.name}</span>
-                    <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)'}}>estudiante@studia.edu</span>
+                    <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)'}}>{profile.program || 'Estudiante'}</span>
                   </div>
                 </div>
                 <div style={{padding: '0.5rem'}}>
-                  <button className="nav-item" style={{width: '100%', justifyContent: 'flex-start', background: 'transparent', padding: '0.5rem 0.75rem'}} onClick={(e) => e.stopPropagation()}>
-                    <Icons.User /> Ver perfil
-                  </button>
                   <button className="nav-item" style={{width: '100%', justifyContent: 'flex-start', background: 'var(--color-bg-base)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)'}} onClick={(e) => { e.stopPropagation(); setActiveTab("ajustes"); setIsProfileMenuOpen(false); }}>
                     <Icons.Settings /> Ajustes
-                  </button>
-                  <button className="nav-item" style={{width: '100%', justifyContent: 'flex-start', background: 'transparent', padding: '0.5rem 0.75rem'}} onClick={(e) => e.stopPropagation()}>
-                    <Icons.HelpCircle /> Ayuda y soporte
-                  </button>
-                </div>
-                <div style={{borderTop: '1px solid var(--color-border)', padding: '0.5rem'}}>
-                  <button className="nav-item" style={{width: '100%', justifyContent: 'flex-start', background: 'transparent', padding: '0.5rem 0.75rem', color: 'var(--color-destructive)'}} onClick={(e) => e.stopPropagation()}>
-                    <Icons.LogOut /> Cerrar sesión
                   </button>
                 </div>
               </div>

@@ -120,20 +120,11 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
           <button className={`nav-item ${activeTab === 'general' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('general')}>
             <Icons.Settings /> General
           </button>
-          <button className={`nav-item ${activeTab === 'notificaciones' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('notificaciones')}>
-            <Icons.Bell /> Notificaciones
-          </button>
           <button className={`nav-item ${activeTab === 'apariencia' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('apariencia')}>
             <Icons.Database /> Apariencia
           </button>
           <button className={`nav-item ${activeTab === 'academico' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('academico')}>
             <Icons.Book /> Académico
-          </button>
-          <button className={`nav-item ${activeTab === 'privacidad' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('privacidad')}>
-            <Icons.Shield /> Privacidad
-          </button>
-          <button className={`nav-item ${activeTab === 'datos' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('datos')}>
-            <Icons.Database /> Datos y respaldo
           </button>
         </div>
 
@@ -286,13 +277,6 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                 </div>
               </div>
             </>
-          )}
-
-          {(activeTab === 'privacidad' || activeTab === 'datos' || activeTab === 'notificaciones') && (
-            <div style={{textAlign: 'center', padding: '4rem 0', color: 'var(--color-text-muted)'}}>
-              <Icons.Database />
-              <p>Funciones en desarrollo para futuras actualizaciones.</p>
-            </div>
           )}
 
         </div>
