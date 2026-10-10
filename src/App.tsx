@@ -9,6 +9,7 @@ import { useProfile } from "./useProfile";
 import { OnboardingScreen } from "./OnboardingScreen";
 import { TimetableScreen } from "./TimetableScreen";
 import { PlannerScreen } from "./PlannerScreen";
+import { SettingsScreen } from "./SettingsScreen";
 import { Task, Priority, Activity, ActivityCategory, FocusSession, AiMessage } from "./types";
 
 // Extracted SVGs (Spark, Bell, Play, Pause, Reset)
@@ -917,53 +918,6 @@ function ProgressScreen({ tasks, focus }: any) {
   );
 }
 
-function SettingsScreen({ theme, onChangeTheme }: any) {
-  return (
-    <div className="main-content">
-      <div className="screen-header">
-        <div>
-          <h1>Ajustes</h1>
-          <p>Configura la apariencia y preferencias de Studia.</p>
-        </div>
-      </div>
-      <div className="settings-section">
-        <h3 style={{marginTop: 0}}>Tema visual</h3>
-        <p style={{color: 'var(--color-text-muted)', fontSize: '0.9rem'}}>Elige la paleta de colores que prefieras.</p>
-        <div className="theme-selector">
-          <div className={`theme-card ${theme === 'rose' ? 'active' : ''}`} onClick={() => onChangeTheme('rose')}>
-            <div className="theme-preview" style={{background: '#FFF5F7'}}><div className="tp-a1" style={{background: '#FF8FAB'}}></div><div className="tp-a2" style={{background: '#FFEBF0'}}></div></div>
-            <span style={{fontWeight: 600, fontSize: '0.9rem'}}>Rosa Monocromático</span>
-          </div>
-          <div className={`theme-card ${theme === 'blue' ? 'active' : ''}`} onClick={() => onChangeTheme('blue')}>
-            <div className="theme-preview" style={{background: '#F0F8FF'}}><div className="tp-b1" style={{background: '#38BDF8'}}></div><div className="tp-b2" style={{background: '#E0F2FE'}}></div></div>
-            <span style={{fontWeight: 600, fontSize: '0.9rem'}}>Azul Monocromático</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="settings-section" style={{marginTop: '3rem'}}>
-        <h3 style={{marginTop: 0}}>Acerca de la aplicación</h3>
-        <div style={{background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem'}}>
-          <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-             <div style={{background: 'var(--color-accent-soft)', color: 'var(--color-accent-main)', borderRadius: 'var(--radius-sm)', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                <Icons.Logo />
-             </div>
-             <div>
-               <h4 style={{margin: 0, fontSize: '1.1rem'}}>Studia</h4>
-               <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Versión 1.0.0</span>
-             </div>
-          </div>
-          <p style={{fontSize: '0.95rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5}}>
-            Studia es un entorno de productividad personal de escritorio diseñado para mantener el enfoque, organizar responsabilidades y progresar en tus objetivos académicos o personales a tu propio ritmo. Desarrollado con Tauri, React y Vite.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-
 // --- App ---
 function App() {
   const [activeTab, setActiveTab] = useState("inicio");
@@ -993,7 +947,7 @@ function App() {
       case "enfoque": return <FocusScreen focus={focus} />;
       case "asistente": return <AiScreen profile={profile} ai={ai} tasks={tasks} activities={activities} focus={focus} />;
       case "progreso": return <ProgressScreen tasks={tasks} focus={focus} />;
-      case "ajustes": return <SettingsScreen theme={theme} onChangeTheme={changeTheme} />;
+      case "ajustes": return <SettingsScreen theme={theme} onChangeTheme={changeTheme} profile={profile} onUpdateProfile={saveProfile} />;
       default: return <Home profile={profile} focus={focus} />;
     }
   };
