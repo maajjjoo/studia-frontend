@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { StudentProfile } from './types';
 
@@ -97,7 +97,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
         </div>
         {isDirty && (
           <div style={{display: 'flex', gap: '1rem'}}>
-            <button className="btn btn-secondary" onClick={() => { setFormData(profile); setIsDirty(false); }}>Cancelar</button>
+            <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={() => { setFormData(profile); setIsDirty(false); }}>Cancelar</button>
             <button className="btn btn-primary" onClick={handleSave}>Guardar cambios</button>
           </div>
         )}
@@ -161,7 +161,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
           <p style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Añade las asignaturas que cursas actualmente.</p>
           <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1rem'}}>
             <input type="text" className="form-input" value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="Ej. Álgebra Lineal" onKeyDown={e => e.key === 'Enter' && addSubject()} />
-            <button className="btn btn-secondary" onClick={addSubject}>Añadir</button>
+            <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={addSubject}><Icons.Plus /> Añadir</button>
           </div>
           <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
             {formData.subjects.map(s => (
@@ -193,7 +193,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                 <input type="time" className="form-input" style={{width: '90px', padding: '0.4rem'}} value={avail.startTime} onChange={e => updateAvailability(i, 'startTime', e.target.value)} />
                 <span style={{color: 'var(--color-text-muted)'}}>-</span>
                 <input type="time" className="form-input" style={{width: '90px', padding: '0.4rem'}} value={avail.endTime} onChange={e => updateAvailability(i, 'endTime', e.target.value)} />
-                <button className="btn btn-secondary" style={{padding: '0.4rem', color: 'var(--prio-high-text)'}} onClick={() => removeAvailability(i)}><Icons.Trash /></button>
+                <button className="btn btn-secondary" style={{padding: '0.4rem', color: 'var(--color-destructive)', display: 'flex', alignItems: 'center', justifyContent: 'center'}} onClick={() => removeAvailability(i)}><Icons.Trash /></button>
               </div>
             ))}
             
@@ -201,7 +201,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
               <select id="new-avail-day" className="form-select" style={{flex: 1}}>
                 {days.map((d, idx) => <option key={d} value={idx + 1}>{d}</option>)}
               </select>
-              <button className="btn btn-secondary" onClick={() => {
+              <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={() => {
                 const day = parseInt((document.getElementById('new-avail-day') as HTMLSelectElement).value);
                 addAvailability(day);
               }}><Icons.Plus /> Añadir ventana</button>

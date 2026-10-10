@@ -902,6 +902,7 @@ function App() {
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   if (!tasksLoaded || !isScheduleLoaded || !focus.isLoaded || !ai.isLoaded || !profileLoaded) return null;
 
@@ -942,7 +943,7 @@ function App() {
           <button className={`nav-item ${activeTab === "enfoque" ? "active" : ""}`} onClick={() => setActiveTab("enfoque")}><Icons.TrendingUp /> Enfoque</button>
           <button className={`nav-item ${activeTab === "asistente" ? "active" : ""}`} onClick={() => setActiveTab("asistente")}><Icons.Spark /> Asistente IA</button>
           <button className={`nav-item ${activeTab === "progreso" ? "active" : ""}`} onClick={() => setActiveTab("progreso")}><Icons.Activity /> Progreso</button>
-          <button className={`nav-item ${activeTab === "ajustes" ? "active" : ""}`} onClick={() => setActiveTab("ajustes")}><Icons.Settings /> Ajustes</button>
+          
         </nav>
         
         <div className="sidebar-promo">
@@ -951,12 +952,34 @@ function App() {
           <p>Tu constancia está dando frutos.</p>
         </div>
 
-        <div className="user-profile">
+        <div className="user-profile" style={{position: 'relative', cursor: 'pointer', transition: 'var(--transition-smooth)'}} onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}>
           <div className="avatar">{getInitials(profile.name)}</div>
           <div className="user-info">
             <span className="user-name">{profile.name}</span>
             <span className="user-role">{profile.program || 'Estudiante'}</span>
           </div>
+          {isProfileMenuOpen && (
+            <>
+              <div style={{position: 'fixed', inset: 0, zIndex: 99}} onClick={(e) => { e.stopPropagation(); setIsProfileMenuOpen(false); }} />
+              <div style={{
+                position: 'absolute', bottom: '100%', left: 0, width: '100%', marginBottom: '0.5rem',
+                background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)',
+                boxShadow: 'var(--shadow-md)', zIndex: 100, padding: '0.5rem', display: 'flex', flexDirection: 'column'
+              }}>
+                <button 
+                  className="nav-item" 
+                  style={{width: '100%', justifyContent: 'flex-start'}}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setActiveTab("ajustes"); 
+                    setIsProfileMenuOpen(false); 
+                  }}
+                >
+                  <Icons.Settings /> Ajustes
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </aside>
 
