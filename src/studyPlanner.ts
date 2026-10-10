@@ -37,7 +37,15 @@ export function generateStudyPlan(
   // Filter valid pending tasks to schedule
   let pendingTasks = tasks
     .filter(t => t.status === 'pending' && (t.estimatedDuration || 0) > 0)
-    .map(t => ({ ...t, remainingDuration: t.estimatedDuration! }));
+    .map(t => {
+      const existingBlocks = activities.filter(a => a.category === 'study_block' && a.taskId === t.id);
+      let scheduledDuration = 0;
+      for (const b of existingBlocks) {
+        scheduledDuration += (parseTime(b.endTime) - parseTime(b.startTime));
+      }
+      return { ...t, remainingDuration: Math.max(0, t.estimatedDuration! - scheduledDuration) };
+    })
+    .filter(t => t.remainingDuration > 0);
 
   // Sort tasks: urgent first, then by priority
   pendingTasks.sort((a, b) => {

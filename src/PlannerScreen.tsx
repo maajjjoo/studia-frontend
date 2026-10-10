@@ -15,7 +15,20 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
   const [rejectedIds, setRejectedIds] = useState<Set<number>>(new Set());
   const [hasGenerated, setHasGenerated] = useState(false);
 
-  const pendingTasksWithDuration = tasks.filter(t => t.status === 'pending' && (t.estimatedDuration || 0) > 0);
+  const pendingTasksWithDuration = tasks
+    .filter(t => t.status === 'pending' && (t.estimatedDuration || 0) > 0)
+    .map(t => {
+      const scheduled = activities
+        .filter(a => a.category === 'study_block' && a.taskId === t.id)
+        .reduce((acc, curr) => {
+          const [h1, m1] = curr.startTime.split(':').map(Number);
+          const [h2, m2] = curr.endTime.split(':').map(Number);
+          return acc + ((h2 * 60 + m2) - (h1 * 60 + m1));
+        }, 0);
+      return { ...t, remainingDuration: Math.max(0, (t.estimatedDuration || 0) - scheduled) };
+    })
+    .filter(t => t.remainingDuration > 0);
+
   const pendingTasksMissingDuration = tasks.filter(t => t.status === 'pending' && (!t.estimatedDuration || t.estimatedDuration === 0));
 
   const handleGenerate = () => {
@@ -34,8 +47,8 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
   const handleSave = () => {
     const accepted = proposals.filter((_, i) => !rejectedIds.has(i));
     const newActivities = accepted.map(p => ({
-      title: `Estudiar: ${p.taskTitle}`,
-      description: 'Bloque de estudio generado automáticamente',
+      title: `Estudio: ${p.taskTitle}`,
+      description: 'Bloque de estudio generado inteligentemente.',
       date: p.date,
       startTime: p.startTime,
       endTime: p.endTime,
@@ -47,7 +60,6 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
       onSaveBlocks(newActivities);
     }
     
-    // Reset view
     setProposals([]);
     setRejectedIds(new Set());
     setHasGenerated(false);
@@ -56,82 +68,143 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
   const activeProposals = proposals.filter((_, i) => !rejectedIds.has(i));
   const missingTime = pendingTasksWithDuration.length > 0 && activeProposals.length === 0 && hasGenerated;
 
+  const priorityLabels = { high: 'Alta', medium: 'Media', low: 'Baja' };
+  const priorityColors = { high: 'var(--color-destructive)', medium: 'var(--color-accent-main)', low: 'var(--color-text-muted)' };
+
   return (
-    <div className="main-content">
+    <div className="main-content" style={{paddingBottom: '4rem'}}>
       <div className="screen-header">
         <div>
           <h1>Planificador Inteligente</h1>
-          <p>Genera bloques de estudio según tus tareas, horario de clases y disponibilidad.</p>
+          <p>Organiza tu tiempo de estudio considerando tus clases, fechas límite y disponibilidad.</p>
         </div>
       </div>
 
-      <div style={{display: 'flex', gap: '2rem', marginTop: '1rem'}}>
+      <div style={{display: 'flex', gap: '2.5rem', marginTop: '2rem'}}>
         
-        {/* Panel izquierdo: Controles e info */}
-        <div style={{flex: '1', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '350px'}}>
+        {/* Panel izquierdo: Entradas */}
+        <div style={{flex: '1', display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: '350px'}}>
+          
           <div className="dash-card">
-            <h3 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-              <Icons.Settings /> Estado Actual
+            <h3 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem'}}>
+              <Icons.CheckSquare /> Tareas a planificar
             </h3>
-            <ul style={{paddingLeft: '1.2rem', margin: '0 0 1rem 0', color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: '1.6'}}>
-              <li><strong>{pendingTasksWithDuration.length}</strong> tareas listas para planificar.</li>
-              <li>{pendingTasksMissingDuration.length} tareas sin duración estimada (ignoradas).</li>
-              <li>Bloques sugeridos de {profile.studyPreferences?.preferredSessionDuration || 25} min.</li>
-            </ul>
-            <button className="btn btn-primary" style={{width: '100%', justifyContent: 'center'}} onClick={handleGenerate}>
-              <Icons.Activity /> {hasGenerated ? 'Regenerar plan' : 'Generar plan semanal'}
-            </button>
+            
+            {pendingTasksWithDuration.length > 0 ? (
+              <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem'}}>
+                {pendingTasksWithDuration.map(t => (
+                  <div key={t.id} style={{background: 'var(--color-bg-base)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'}}>
+                    <h4 style={{margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: 'var(--color-text-main)'}}>{t.title}</h4>
+                    <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.75rem'}}>
+                      <span style={{color: priorityColors[t.priority], fontWeight: 600}}>
+                        Prioridad {priorityLabels[t.priority]}
+                      </span>
+                      {t.dueDate && (
+                        <span style={{color: 'var(--color-text-muted)'}}>• Vence: {t.dueDate}</span>
+                      )}
+                      <span style={{color: 'var(--color-text-muted)'}}>• Quedan {t.remainingDuration} min</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state" style={{padding: '1.5rem 1rem'}}>
+                <Icons.Check />
+                <p>No tienes tareas pendientes con duración estimada.</p>
+              </div>
+            )}
           </div>
 
-          {missingTime && (
-            <div className="dash-card" style={{background: 'var(--prio-high-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text-main)'}}>
-              <h4 style={{marginTop: 0, color: 'var(--prio-high-text)'}}>Tiempo insuficiente</h4>
-              <p style={{fontSize: '0.85rem', margin: 0, lineHeight: 1.5}}>No se encontraron espacios libres en los próximos 7 días para ubicar todas tus tareas. Considera ampliar tu disponibilidad o dividir las tareas.</p>
+          {pendingTasksMissingDuration.length > 0 && (
+            <div style={{background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'flex-start'}}>
+              <div style={{color: 'var(--color-text-muted)', paddingTop: '0.1rem'}}><Icons.Activity /></div>
+              <div>
+                <h4 style={{margin: '0 0 0.25rem 0', fontSize: '0.9rem'}}>Tareas omitidas</h4>
+                <p style={{margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5'}}>
+                  Hay {pendingTasksMissingDuration.length} tarea(s) sin duración estimada. Edítalas en la pestaña de Tareas para incluirlas en el plan.
+                </p>
+              </div>
             </div>
           )}
+
+          <div className="dash-card" style={{background: 'var(--color-surface)', border: 'none', boxShadow: 'none'}}>
+            <button className="btn btn-primary" style={{width: '100%', justifyContent: 'center', padding: '0.85rem', fontSize: '1rem'}} onClick={handleGenerate} disabled={pendingTasksWithDuration.length === 0}>
+              <Icons.Spark /> {hasGenerated ? 'Regenerar Propuesta' : 'Generar Propuesta'}
+            </button>
+            <p style={{textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0.75rem 0 0 0'}}>
+              Basado en bloques de {profile.studyPreferences?.preferredSessionDuration || 25} minutos.
+            </p>
+          </div>
         </div>
 
-        {/* Panel derecho: Propuestas */}
-        <div style={{flex: '2'}}>
+        {/* Panel derecho: Propuesta */}
+        <div style={{flex: '1.5', display: 'flex', flexDirection: 'column'}}>
           {!hasGenerated ? (
-            <div className="empty-state dash-card" style={{height: '100%', minHeight: '300px'}}>
-              <Icons.Calendar />
-              <h3>Plan no generado</h3>
-              <p>Presiona "Generar plan semanal" para buscar espacios en tu agenda.</p>
+            <div className="empty-state dash-card" style={{height: '100%', minHeight: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
+              <div style={{color: 'var(--color-accent-soft)', marginBottom: '1rem', transform: 'scale(2)'}}>
+                <Icons.Calendar />
+              </div>
+              <h3 style={{fontSize: '1.2rem', marginBottom: '0.5rem'}}>Planificador en pausa</h3>
+              <p style={{maxWidth: '300px', margin: 0}}>Haz clic en "Generar Propuesta" para encontrar los mejores espacios de estudio en tu agenda.</p>
             </div>
           ) : activeProposals.length === 0 && !missingTime ? (
-            <div className="empty-state dash-card" style={{height: '100%', minHeight: '300px'}}>
-              <Icons.Check />
-              <h3>¡Todo planificado!</h3>
-              <p>No tienes tareas pendientes con duración estimada por asignar.</p>
+            <div className="empty-state dash-card" style={{height: '100%', minHeight: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
+              <div style={{color: 'var(--color-accent-main)', marginBottom: '1rem', transform: 'scale(2)'}}>
+                <Icons.CheckSquare />
+              </div>
+              <h3 style={{fontSize: '1.2rem', marginBottom: '0.5rem'}}>¡Todo planificado!</h3>
+              <p style={{maxWidth: '300px', margin: 0}}>Tus tareas pendientes ya están cubiertas o no tienes tareas por planificar.</p>
             </div>
           ) : (
-            <div className="dash-card">
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem', marginBottom: '1rem'}}>
-                <h3 style={{margin: 0}}>Propuesta de estudio ({activeProposals.length} bloques)</h3>
-                <button className="btn btn-primary" onClick={handleSave}>Confirmar y Guardar</button>
+            <div className="dash-card" style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem', marginBottom: '1.5rem'}}>
+                <div>
+                  <h3 style={{margin: '0 0 0.25rem 0', fontSize: '1.2rem'}}>Propuesta de estudio</h3>
+                  <p style={{margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Revisa los {activeProposals.length} bloques sugeridos antes de confirmar.</p>
+                </div>
+                <button className="btn btn-primary" onClick={handleSave} disabled={activeProposals.length === 0}>
+                  Guardar en Calendario
+                </button>
               </div>
 
-              <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+              {missingTime && (
+                <div style={{background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'flex-start', marginBottom: '1.5rem'}}>
+                  <div style={{color: '#EF4444', paddingTop: '0.1rem'}}><Icons.Bell /></div>
+                  <div>
+                    <h4 style={{margin: '0 0 0.25rem 0', fontSize: '0.9rem', color: '#B91C1C'}}>Tiempo insuficiente</h4>
+                    <p style={{margin: 0, fontSize: '0.85rem', color: '#991B1B', lineHeight: '1.5'}}>
+                      No se encontraron espacios libres suficientes en los próximos 7 días para ubicar todas tus tareas. Considera ampliar tu disponibilidad en los Ajustes.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflowY: 'auto', paddingRight: '0.5rem'}}>
                 {proposals.map((p, index) => {
                   if (rejectedIds.has(index)) return null;
-                  const [, m, d] = p.date.split('-');
-                  const fDate = `${d}/${m}`;
+                  
+                  const task = tasks.find(t => t.id === p.taskId);
+                  
                   return (
                     <div key={index} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                      background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', 
-                      borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem'
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
+                      background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderLeft: '4px solid var(--color-accent-main)',
+                      borderRadius: 'var(--radius-sm)', padding: '1rem'
                     }}>
-                      <div>
-                        <h5 style={{margin: '0 0 0.25rem 0'}}>{p.taskTitle}</h5>
-                        <p style={{margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                          <span><Icons.Calendar /> {fDate}</span>
-                          <span><Icons.Clock /> {p.startTime} - {p.endTime}</span>
-                          <span className="badge" style={{background: 'var(--color-bg-main)'}}>{p.duration} min</span>
-                        </p>
+                      <div style={{minWidth: '80px'}}>
+                        <div style={{fontWeight: 600, color: 'var(--color-text-main)'}}>{p.date.substring(5).replace('-', '/')}</div>
+                        <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{p.startTime} - {p.endTime}</div>
                       </div>
-                      <button className="btn btn-secondary" style={{color: 'var(--prio-high-text)', padding: '0.4rem'}} onClick={() => handleReject(index)} title="Rechazar bloque">
+                      
+                      <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem', borderLeft: '1px solid var(--color-border)', paddingLeft: '1rem'}}>
+                        <span style={{fontWeight: 600, color: 'var(--color-text-main)', fontSize: '0.95rem'}}>{p.taskTitle}</span>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)'}}>
+                          <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}><Icons.Clock /> {p.duration} min</span>
+                          {task && <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>• <Icons.Activity /> Prioridad {priorityLabels[task.priority]}</span>}
+                        </div>
+                      </div>
+                      
+                      <button className="btn btn-secondary" style={{padding: '0.5rem', color: 'var(--color-text-muted)'}} onClick={() => handleReject(index)} title="Rechazar bloque sugerido">
                         <Icons.Close />
                       </button>
                     </div>
