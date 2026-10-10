@@ -6,12 +6,13 @@ export interface Task {
   title: string;
   description?: string;
   dueDate?: string;
+  estimatedDuration?: number; // minutes
   priority: Priority;
   status: TaskStatus;
   createdAt: number;
 }
 
-export type ActivityCategory = 'class' | 'exam' | 'assignment' | 'personal';
+export type ActivityCategory = 'class' | 'exam' | 'assignment' | 'personal' | 'study_block';
 
 export interface Activity {
   id: string;
@@ -21,6 +22,8 @@ export interface Activity {
   startTime: string; // HH:mm
   endTime: string; // HH:mm
   category: ActivityCategory;
+  taskId?: string;
+  subject?: string;
   createdAt: number;
 }
 

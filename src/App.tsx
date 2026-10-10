@@ -8,6 +8,7 @@ import { useAi } from "./useAi";
 import { useProfile } from "./useProfile";
 import { OnboardingScreen } from "./OnboardingScreen";
 import { TimetableScreen } from "./TimetableScreen";
+import { PlannerScreen } from "./PlannerScreen";
 import { Task, Priority, Activity, ActivityCategory, FocusSession, AiMessage } from "./types";
 
 // Extracted SVGs (Spark, Bell, Play, Pause, Reset)
@@ -70,14 +71,16 @@ function TaskModal({ isOpen, onClose, onSave, editingTask }: any) {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
   const [dueDate, setDueDate] = useState("");
+  const [estimatedDuration, setEstimatedDuration] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       if (editingTask) {
         setTitle(editingTask.title); setDescription(editingTask.description || "");
         setPriority(editingTask.priority); setDueDate(editingTask.dueDate || "");
+        setEstimatedDuration(editingTask.estimatedDuration ? String(editingTask.estimatedDuration) : "");
       } else {
-        setTitle(""); setDescription(""); setPriority("medium"); setDueDate("");
+        setTitle(""); setDescription(""); setPriority("medium"); setDueDate(""); setEstimatedDuration("");
       }
     }
   }, [isOpen, editingTask]);
@@ -87,7 +90,14 @@ function TaskModal({ isOpen, onClose, onSave, editingTask }: any) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    onSave({ title: title.trim(), description: description.trim() || undefined, priority, dueDate: dueDate || undefined, status: editingTask ? editingTask.status : 'pending' });
+    onSave({ 
+      title: title.trim(), 
+      description: description.trim() || undefined, 
+      priority, 
+      dueDate: dueDate || undefined, 
+      estimatedDuration: estimatedDuration ? parseInt(estimatedDuration, 10) : undefined,
+      status: editingTask ? editingTask.status : 'pending' 
+    });
     onClose();
   };
 
@@ -118,6 +128,10 @@ function TaskModal({ isOpen, onClose, onSave, editingTask }: any) {
               <label className="form-label">Fecha de entrega</label>
               <input type="date" className="form-input" value={dueDate} onChange={e => setDueDate(e.target.value)} />
             </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Duración estimada (minutos)</label>
+            <input type="number" className="form-input" value={estimatedDuration} onChange={e => setEstimatedDuration(e.target.value)} min="5" step="5" placeholder="Ej. 60" />
           </div>
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
@@ -379,7 +393,7 @@ function Home({ profile, tasks, activities, focus, onNavigate, onOpenNewTask, on
                   <span className="mini-agenda-time">{a.startTime}</span>
                   <div className="mini-agenda-info">
                     <h5>{a.title}</h5>
-                    <p>{a.category === 'class_session' ? 'Clase Recurrente' : a.category === 'class' ? 'Clase' : a.category === 'exam' ? 'Examen' : a.category === 'assignment' ? 'Tarea' : 'Personal'}</p>
+                    <p>{a.category === 'study_block' ? 'Bloque de Estudio' : a.category === 'class_session' ? 'Clase Recurrente' : a.category === 'class' ? 'Clase' : a.category === 'exam' ? 'Examen' : a.category === 'assignment' ? 'Tarea' : 'Personal'}</p>
                   </div>
                 </div>
               )) : <p style={{fontSize: '0.8rem'}}>No hay eventos próximos.</p>}
@@ -973,6 +987,7 @@ function App() {
     switch (activeTab) {
       case "inicio": return <Home profile={profile} tasks={tasks} activities={activities} focus={focus} onNavigate={setActiveTab} onOpenNewTask={() => setIsTaskModalOpen(true)} onOpenNewActivity={() => setIsActivityModalOpen(true)} onToggleTask={toggleTaskStatus} />;
       case "tareas": return <TasksScreen tasks={tasks} onAdd={addTask} onUpdate={updateTask} onDelete={deleteTask} onToggle={toggleTaskStatus} />;
+      case "planificador": return <PlannerScreen profile={profile} tasks={tasks} activities={activities} onSaveBlocks={(blocks) => { blocks.forEach(b => addActivity(b as Activity)); setActiveTab('calendario'); }} />;
       case "horario": return <TimetableScreen profile={profile} onAddClass={addClassSession} onUpdateClass={updateClassSession} onDeleteClass={deleteClassSession} onUpdateProfile={saveProfile} />;
       case "calendario": return <CalendarScreen activities={activities} onAdd={addActivity} onUpdate={updateActivity} onDelete={deleteActivity} />;
       case "enfoque": return <FocusScreen focus={focus} />;
@@ -995,6 +1010,7 @@ function App() {
         <nav className="nav-links">
           <button className={`nav-item ${activeTab === "inicio" ? "active" : ""}`} onClick={() => setActiveTab("inicio")}><Icons.Home /> Inicio</button>
           <button className={`nav-item ${activeTab === "tareas" ? "active" : ""}`} onClick={() => setActiveTab("tareas")}><Icons.CheckSquare /> Tareas</button>
+          <button className={`nav-item ${activeTab === "planificador" ? "active" : ""}`} onClick={() => setActiveTab("planificador")}><Icons.Edit /> Planificador</button>
           <button className={`nav-item ${activeTab === "horario" ? "active" : ""}`} onClick={() => setActiveTab("horario")}><Icons.Book /> Horario</button>
           <button className={`nav-item ${activeTab === "calendario" ? "active" : ""}`} onClick={() => setActiveTab("calendario")}><Icons.Calendar /> Calendario</button>
           <button className={`nav-item ${activeTab === "enfoque" ? "active" : ""}`} onClick={() => setActiveTab("enfoque")}><Icons.TrendingUp /> Enfoque</button>
