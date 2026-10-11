@@ -82,6 +82,7 @@ export interface StudentProfile {
     preferredBreakDuration: number; // minutes
     strictFocusMode?: boolean;
     restrictedApps?: string[];
+    restrictedWebsites?: string[];
   };
   studyAvailability: StudyAvailability[];
 }

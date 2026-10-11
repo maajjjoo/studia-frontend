@@ -13,6 +13,8 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
   const [formData, setFormData] = useState<StudentProfile>(profile);
   const [isDirty, setIsDirty] = useState(false);
   const [newSubject, setNewSubject] = useState('');
+  const [newWebsite, setNewWebsite] = useState('');
+  const [websiteError, setWebsiteError] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('general');
@@ -25,6 +27,42 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
   const handleChange = (field: keyof StudentProfile, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setIsDirty(true);
+  };
+
+
+  const normalizeDomain = (input: string): string | null => {
+    let val = input.trim().toLowerCase();
+    if (!val) return null;
+    val = val.replace(/^https?:\/\//, '');
+    val = val.split('/')[0].split('?')[0];
+    val = val.replace(/^www\./, '');
+    
+    const domainRegex = /^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]\.[a-z]{2,}$/;
+    if (domainRegex.test(val)) return val;
+    return null;
+  };
+
+  const handleAddWebsite = () => {
+    const normalized = normalizeDomain(newWebsite);
+    if (!normalized) {
+      setWebsiteError('Dominio inválido. Ej: instagram.com');
+      return;
+    }
+    
+    const current = formData.studyPreferences?.restrictedWebsites || [];
+    if (current.includes(normalized)) {
+      setWebsiteError('El dominio ya está en la lista.');
+      return;
+    }
+
+    handlePreferencesChange('restrictedWebsites', [...current, normalized]);
+    setNewWebsite('');
+    setWebsiteError('');
+  };
+
+  const handleRemoveWebsite = (domain: string) => {
+    const current = formData.studyPreferences?.restrictedWebsites || [];
+    handlePreferencesChange('restrictedWebsites', current.filter(d => d !== domain));
   };
 
   const handlePreferencesChange = (field: keyof StudentProfile['studyPreferences'], value: any) => {
@@ -319,41 +357,101 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                     </label>
                   </div>
 
-                  <div>
-                    <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Aplicaciones Soportadas</h5>
-                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
-                      {[
-                        { id: 'discord.exe', name: 'Discord' },
-                        { id: 'whatsapp.exe', name: 'WhatsApp' },
-                        { id: 'steam.exe', name: 'Steam' },
-                        { id: 'spotify.exe', name: 'Spotify' },
-                        { id: 'telegram.exe', name: 'Telegram' },
-                        { id: 'leagueclient.exe', name: 'League of Legends' }
-                      ].map(app => {
-                        const isSelected = (formData.studyPreferences?.restrictedApps || []).includes(app.id);
-                        return (
-                          <div key={app.id} style={{display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-bg-base)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'}}>
-                            <input 
-                              type="checkbox" 
-                              checked={isSelected}
-                              onChange={() => {
-                                const current = formData.studyPreferences?.restrictedApps || [];
-                                const updated = isSelected ? current.filter(id => id !== app.id) : [...current, app.id];
-                                handlePreferencesChange('restrictedApps', updated);
-                                setIsDirty(true);
-                              }}
-                              disabled={!(formData.studyPreferences?.strictFocusMode)}
-                              style={{cursor: 'pointer'}}
-                            />
-                            <div style={{flex: 1, fontWeight: 500, color: 'var(--color-text-main)', opacity: formData.studyPreferences?.strictFocusMode ? 1 : 0.5}}>
-                              {app.name}
+
+                  <div style={{marginTop: '2rem'}}>
+                    <div style={{display: 'flex', gap: '2rem', flexWrap: 'wrap'}}>
+                      
+                      {/* Apps Column */}
+                      <div style={{flex: '1 1 300px'}}>
+                        <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Aplicaciones Soportadas</h5>
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                          {[
+                            { id: 'discord.exe', name: 'Discord' },
+                            { id: 'whatsapp.exe', name: 'WhatsApp' },
+                            { id: 'steam.exe', name: 'Steam' },
+                            { id: 'spotify.exe', name: 'Spotify' },
+                            { id: 'telegram.exe', name: 'Telegram' },
+                            { id: 'leagueclient.exe', name: 'League of Legends' }
+                          ].map(app => {
+                            const isSelected = (formData.studyPreferences?.restrictedApps || []).includes(app.id);
+                            return (
+                              <div key={app.id} style={{display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-bg-base)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'}}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={isSelected}
+                                  onChange={() => {
+                                    const current = formData.studyPreferences?.restrictedApps || [];
+                                    const updated = isSelected ? current.filter(id => id !== app.id) : [...current, app.id];
+                                    handlePreferencesChange('restrictedApps', updated);
+                                    setIsDirty(true);
+                                  }}
+                                  disabled={!(formData.studyPreferences?.strictFocusMode)}
+                                  style={{cursor: 'pointer'}}
+                                />
+                                <div style={{flex: 1, fontWeight: 500, color: 'var(--color-text-main)', opacity: formData.studyPreferences?.strictFocusMode ? 1 : 0.5}}>
+                                  {app.name}
+                                </div>
+                                <div style={{fontSize: '0.75rem', color: 'var(--color-text-muted)', fontFamily: 'monospace'}}>
+                                  {app.id}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Websites Column */}
+                      <div style={{flex: '1 1 300px'}}>
+                        <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 0.25rem 0'}}>Sitios Web</h5>
+                        <div style={{fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1rem', lineHeight: '1.4'}}>
+                          Nota: El bloqueo en navegadores requiere permisos del sistema (próximamente).
+                        </div>
+                        
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                          <div style={{display: 'flex', gap: '0.5rem', flexDirection: 'column'}}>
+                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                              <input 
+                                type="text" 
+                                className="form-input" 
+                                style={{flex: 1}} 
+                                value={newWebsite} 
+                                onChange={e => setNewWebsite(e.target.value)} 
+                                placeholder="Ej. instagram.com" 
+                                onKeyDown={e => e.key === 'Enter' && handleAddWebsite()}
+                                disabled={!(formData.studyPreferences?.strictFocusMode)}
+                              />
+                              <button 
+                                className="btn btn-secondary" 
+                                style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} 
+                                onClick={handleAddWebsite}
+                                disabled={!(formData.studyPreferences?.strictFocusMode) || !newWebsite.trim()}
+                              >
+                                <Icons.Plus /> Añadir
+                              </button>
                             </div>
-                            <div style={{fontSize: '0.75rem', color: 'var(--color-text-muted)', fontFamily: 'monospace'}}>
-                              {app.id}
-                            </div>
+                            {websiteError && <div style={{color: 'var(--color-destructive)', fontSize: '0.8rem'}}>{websiteError}</div>}
                           </div>
-                        );
-                      })}
+
+                          <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
+                            {(formData.studyPreferences?.restrictedWebsites || []).map(site => (
+                              <span key={site} className="badge" style={{display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', padding: '0.4rem 0.75rem', background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', opacity: formData.studyPreferences?.strictFocusMode ? 1 : 0.5}}>
+                                {site}
+                                <button 
+                                  style={{background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--color-text-muted)'}} 
+                                  onClick={() => handleRemoveWebsite(site)}
+                                  disabled={!(formData.studyPreferences?.strictFocusMode)}
+                                >
+                                  <span style={{width: '14px', height: '14px', display: 'flex'}}><Icons.Close /></span>
+                                </button>
+                              </span>
+                            ))}
+                            {(formData.studyPreferences?.restrictedWebsites || []).length === 0 && (
+                              <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic'}}>No hay sitios web restringidos.</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 
