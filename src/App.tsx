@@ -594,7 +594,8 @@ function CalendarScreen({ activities, onAdd, onUpdate, onDelete }: any) {
   );
 }
 
-function FocusScreen({ focus }: any) {
+function FocusScreen({ focus, profile }: any) {
+  const [showConsent, setShowConsent] = useState(false);
   const localTodayStr = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
   
   const todaySessions = focus.sessions.filter((s: FocusSession) => {
@@ -628,13 +629,50 @@ function FocusScreen({ focus }: any) {
           </div>
 
           <div className="focus-actions">
-            {focus.isRunning ? (
-              <button className="btn-focus-action active" onClick={focus.pause}><Icons.Pause /> Pausar</button>
-            ) : (
-              <button className="btn-focus-action" onClick={focus.start}><Icons.Play /> Iniciar</button>
+              {focus.isRunning ? (
+                <button className="btn-focus-action active" onClick={focus.pause}><Icons.Pause /> Pausar</button>
+              ) : (
+                <button className="btn-focus-action" onClick={() => {
+                  const restrictedApps = profile?.studyPreferences?.restrictedApps || [];
+                  const isStrict = profile?.studyPreferences?.strictFocusMode || false;
+                  
+                  if (focus.mode === 'focus' && isStrict && restrictedApps.length > 0) {
+                    const consentedStr = JSON.stringify(focus.consentedApps || []);
+                    const requiredStr = JSON.stringify(restrictedApps);
+                    if (consentedStr !== requiredStr) {
+                      setShowConsent(true);
+                      return;
+                    }
+                  }
+                  focus.start(restrictedApps);
+                }}><Icons.Play /> Iniciar</button>
+              )}
+              <button className="btn-focus-action outline" onClick={focus.reset}><Icons.Reset /> Reiniciar</button>
+            </div>
+            
+            {showConsent && (
+              <div className="modal-overlay">
+                <div className="modal-content" style={{maxWidth: '400px'}}>
+                  <h2 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                    <span style={{color: 'var(--color-destructive)'}}><Icons.Shield /></span> 
+                    Modo Estricto Activo
+                  </h2>
+                  <p>La terminación forzada causará la <strong>pérdida permanente</strong> de cualquier trabajo no guardado en las aplicaciones bloqueadas.</p>
+                  <div style={{background: 'var(--color-bg-base)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--color-text-muted)'}}>
+                    Se cerrarán automáticamente: <strong>{(profile?.studyPreferences?.restrictedApps || []).join(', ')}</strong>
+                  </div>
+                  <div className="modal-actions">
+                    <button className="btn btn-secondary" onClick={() => setShowConsent(false)}>Cancelar</button>
+                    <button className="btn btn-primary" style={{background: 'var(--color-destructive)', borderColor: 'var(--color-destructive)'}} onClick={() => {
+                      const restrictedApps = profile?.studyPreferences?.restrictedApps || [];
+                      focus.setConsentedApps([...restrictedApps]);
+                      setShowConsent(false);
+                      focus.start(restrictedApps);
+                    }}>Confirmar y Comenzar</button>
+                  </div>
+                </div>
+              </div>
             )}
-            <button className="btn-focus-action outline" onClick={focus.reset}><Icons.Reset /> Reiniciar</button>
-          </div>
         </div>
 
         <div className="focus-sidebar">
@@ -917,7 +955,7 @@ function App() {
       case "planificador": return <PlannerScreen profile={profile} tasks={tasks} activities={activities} onSaveBlocks={(blocks) => { blocks.forEach(b => addActivity(b as Activity)); setActiveTab('calendario'); }} />;
       case "horario": return <TimetableScreen profile={profile} onAddClass={addClassSession} onUpdateClass={updateClassSession} onDeleteClass={deleteClassSession} onUpdateProfile={saveProfile} />;
       case "calendario": return <CalendarScreen activities={activities} onAdd={addActivity} onUpdate={updateActivity} onDelete={deleteActivity} />;
-      case "enfoque": return <FocusScreen focus={focus} />;
+      case "enfoque": return <FocusScreen focus={focus} profile={profile} />;
       case "asistente": return <AiScreen profile={profile} ai={ai} tasks={tasks} activities={activities} focus={focus} />;
       case "progreso": return <ProgressScreen tasks={tasks} focus={focus} />;
       case "ajustes": return <SettingsScreen theme={theme} onChangeTheme={changeTheme} profile={profile} onUpdateProfile={saveProfile} />;
