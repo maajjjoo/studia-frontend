@@ -634,40 +634,43 @@ function FocusScreen({ focus, profile }: any) {
               ) : (
                 <button className="btn-focus-action" onClick={() => {
                   const restrictedApps = profile?.studyPreferences?.restrictedApps || [];
+                      const customRestrictedApps = profile?.studyPreferences?.customRestrictedApps || [];
                   const isStrict = profile?.studyPreferences?.strictFocusMode || false;
-                  
-                  if (focus.mode === 'focus' && isStrict && restrictedApps.length > 0) {
-                    const consentedStr = JSON.stringify(focus.consentedApps || []);
-                    const requiredStr = JSON.stringify(restrictedApps);
+
+                  if (focus.mode === 'focus' && isStrict && (restrictedApps.length > 0 || customRestrictedApps.length > 0)) {
+                    const consentedStr = JSON.stringify(focus.consentedApps || {default: [], custom: []});
+                    const requiredStr = JSON.stringify({default: restrictedApps, custom: customRestrictedApps});
                     if (consentedStr !== requiredStr) {
                       setShowConsent(true);
                       return;
                     }
                   }
-                  focus.start(restrictedApps);
+                  focus.start(restrictedApps, customRestrictedApps);
                 }}><Icons.Play /> Iniciar</button>
               )}
               <button className="btn-focus-action outline" onClick={focus.reset}><Icons.Reset /> Reiniciar</button>
             </div>
-            
+
             {showConsent && (
               <div className="modal-overlay">
                 <div className="modal-content" style={{maxWidth: '400px'}}>
                   <h2 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                    <span style={{color: 'var(--color-destructive)'}}><Icons.Shield /></span> 
+                    <span style={{color: 'var(--color-destructive)'}}><Icons.Shield /></span>
                     Modo Estricto Activo
                   </h2>
                   <p>La terminación forzada causará la <strong>pérdida permanente</strong> de cualquier trabajo no guardado en las aplicaciones bloqueadas.</p>
                   <div style={{background: 'var(--color-bg-base)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--color-text-muted)'}}>
-                    Se cerrarán automáticamente: <strong>{(profile?.studyPreferences?.restrictedApps || []).join(', ')}</strong>
+                    Se cerrarán automáticamente:
+                    <strong>{[(profile?.studyPreferences?.restrictedApps || []), (profile?.studyPreferences?.customRestrictedApps || []).map((p: string) => p.split('\\').pop() || p)].flat().join(', ')}</strong>
                   </div>
                   <div className="modal-actions">
                     <button className="btn btn-secondary" onClick={() => setShowConsent(false)}>Cancelar</button>
                     <button className="btn btn-primary" style={{background: 'var(--color-destructive)', borderColor: 'var(--color-destructive)'}} onClick={() => {
                       const restrictedApps = profile?.studyPreferences?.restrictedApps || [];
-                      focus.setConsentedApps([...restrictedApps]);
+                      const customRestrictedApps = profile?.studyPreferences?.customRestrictedApps || [];
+                      focus.setConsentedApps({default: [...restrictedApps], custom: [...customRestrictedApps]});
                       setShowConsent(false);
-                      focus.start(restrictedApps);
+                      focus.start(restrictedApps, customRestrictedApps);
                     }}>Confirmar y Comenzar</button>
                   </div>
                 </div>

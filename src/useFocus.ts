@@ -17,7 +17,7 @@ export function useFocus() {
   const [isRunning, setIsRunning] = useState(false);
   
   // Track apps that the user has explicitly consented to block in the current session
-  const [consentedApps, setConsentedApps] = useState<string[] | null>(null);
+  const [consentedApps, setConsentedApps] = useState<{default: string[], custom: string[]} | null>(null);
 
   const targetEndTimeRef = useRef<number | null>(null);
   const sessionStartTimeRef = useRef<number | null>(null);
@@ -100,14 +100,14 @@ export function useFocus() {
     }
   }, [handleTimerComplete]);
 
-  const start = useCallback((appsToBlock?: string[]) => {
+  const start = useCallback((appsToBlock?: string[], customAppsToBlock?: string[]) => {
     if (isRunning) return;
     setIsRunning(true);
     
     // Trigger backend if strictly focusing and apps are provided
-    if (mode === 'focus' && appsToBlock && appsToBlock.length > 0) {
+    if (mode === 'focus' && ((appsToBlock && appsToBlock.length > 0) || (customAppsToBlock && customAppsToBlock.length > 0))) {
       try {
-        invoke('start_focus_mode', { apps: appsToBlock }).catch(err => console.error("Tauri start_focus_mode error:", err));
+        invoke('start_focus_mode', { apps: appsToBlock, customApps: customAppsToBlock || [] }).catch(err => console.error("Tauri start_focus_mode error:", err));
       } catch (e) {
         console.error(e);
       }

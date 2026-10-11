@@ -1,3 +1,4 @@
+import { open } from '@tauri-apps/plugin-dialog';
 import { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { StudentProfile } from './types';
@@ -36,7 +37,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
     val = val.replace(/^https?:\/\//, '');
     val = val.split('/')[0].split('?')[0];
     val = val.replace(/^www\./, '');
-    
+
     const domainRegex = /^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]\.[a-z]{2,}$/;
     if (domainRegex.test(val)) return val;
     return null;
@@ -48,7 +49,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
       setWebsiteError('Dominio inválido. Ej: instagram.com');
       return;
     }
-    
+
     const current = formData.studyPreferences?.restrictedWebsites || [];
     if (current.includes(normalized)) {
       setWebsiteError('El dominio ya está en la lista.');
@@ -325,9 +326,9 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
             <>
               <div>
                 <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Bloqueo de Aplicaciones</h4>
-                
+
                 <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
-                  
+
                   <div style={{background: 'rgba(var(--color-accent-soft-rgb), 0.08)', border: '1px solid rgba(var(--color-accent-soft-rgb), 0.2)', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start'}}>
                     <span style={{color: 'var(--color-accent-soft)', width: '16px', height: '16px', display: 'flex', marginTop: '0.1rem'}}><Icons.Shield /></span>
                     <div>
@@ -346,12 +347,12 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                       <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem'}}>Aplicar restricciones automáticamente al iniciar un Pomodoro.</div>
                     </div>
                     <label className="switch">
-                      <input type="checkbox" 
-                        checked={formData.studyPreferences?.strictFocusMode || false} 
+                      <input type="checkbox"
+                        checked={formData.studyPreferences?.strictFocusMode || false}
                         onChange={(e) => {
                           handlePreferencesChange('strictFocusMode', e.target.checked);
                           setIsDirty(true);
-                        }} 
+                        }}
                       />
                       <span className="slider round"></span>
                     </label>
@@ -360,7 +361,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
                   <div style={{marginTop: '2rem'}}>
                     <div style={{display: 'flex', gap: '2rem', flexWrap: 'wrap'}}>
-                      
+
                       {/* Apps Column */}
                       <div style={{flex: '1 1 300px'}}>
                         <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Aplicaciones Soportadas</h5>
@@ -376,8 +377,8 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                             const isSelected = (formData.studyPreferences?.restrictedApps || []).includes(app.id);
                             return (
                               <div key={app.id} style={{display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-bg-base)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'}}>
-                                <input 
-                                  type="checkbox" 
+                                <input
+                                  type="checkbox"
                                   checked={isSelected}
                                   onChange={() => {
                                     const current = formData.studyPreferences?.restrictedApps || [];
@@ -397,8 +398,106 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                               </div>
                             );
                           })}
+
+                        </div>
+
+                        <div style={{marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                          <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: 0}}>Aplicaciones Personalizadas</h5>
+                          <button
+                            className="btn btn-secondary"
+                            style={{padding: '0.25rem 0.5rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem'}}
+                            disabled={!(formData.studyPreferences?.strictFocusMode)}
+                            onClick={async () => {
+                              try {
+                                const selected = await open({
+                                  multiple: false,
+                                  filters: [{ name: 'Ejecutable', extensions: ['exe'] }]
+                                });
+                                if (selected && typeof selected === 'string') {
+                                  const current = formData.studyPreferences?.customRestrictedApps || [];
+                                  if (!current.includes(selected)) {
+                                    const updatedApps = [...current, selected];
+                                    const newProfile = {
+                                      ...formData,
+                                      studyPreferences: {
+                                        ...formData.studyPreferences,
+                                        customRestrictedApps: updatedApps
+                                      }
+                                    };
+                                    setFormData(newProfile);
+                                    onUpdateProfile(newProfile);
+                                    setIsDirty(false);
+                                  }
+                                }
+                              } catch (e) {
+                                console.error('Error opening dialog:', e);
+                              }
+                            }}
+                          >
+                            <Icons.Plus /> Agregar aplicación
+                          </button>
+                        </div>
+
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem'}}>
+                          {(formData.studyPreferences?.customRestrictedApps || []).map(appPath => {
+                            const fileName = appPath.split('\\').pop() || appPath;
+                            return (
+                              <div key={appPath} style={{display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-bg-base)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)'}}>
+                                <div style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+                                  <span style={{fontWeight: 500, color: 'var(--color-text-main)', opacity: formData.studyPreferences?.strictFocusMode ? 1 : 0.5}}>{fileName}</span>
+                                  <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px'}} title={appPath}>{appPath}</span>
+                                </div>
+                                <button
+                                  title="Eliminar aplicación"
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: formData.studyPreferences?.strictFocusMode ? 'pointer' : 'default',
+                                    padding: '0.5rem',
+                                    color: 'var(--color-destructive)',
+                                    opacity: formData.studyPreferences?.strictFocusMode ? 1 : 0.5,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: 'var(--radius-sm)',
+                                    transition: 'background 0.2s ease'
+                                  }}
+                                  onMouseOver={(e) => { if(formData.studyPreferences?.strictFocusMode) e.currentTarget.style.background = 'var(--color-bg-hover)'; }}
+                                  onMouseOut={(e) => { e.currentTarget.style.background = 'none'; }}
+                                  disabled={!(formData.studyPreferences?.strictFocusMode)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+
+                                    const current = formData.studyPreferences?.customRestrictedApps || [];
+                                    const updatedApps = current.filter(p => p !== appPath);
+
+                                    const newProfile = {
+                                      ...formData,
+                                      studyPreferences: {
+                                        ...formData.studyPreferences,
+                                        customRestrictedApps: updatedApps
+                                      }
+                                    };
+
+                                    setFormData(newProfile);
+                                    onUpdateProfile(newProfile);
+                                    setIsDirty(false);
+                                  }}
+                                >
+                                  <span style={{width: '18px', height: '18px', display: 'flex'}}>
+                                    <Icons.Trash />
+                                  </span>
+                                </button>
+                              </div>
+                            );
+                          })}
+                          {(formData.studyPreferences?.customRestrictedApps || []).length === 0 && (
+                            <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '0.5rem 0'}}>No has agregado aplicaciones personalizadas.</div>
+                          )}
                         </div>
                       </div>
+
 
                       {/* Websites Column */}
                       <div style={{flex: '1 1 300px'}}>
@@ -406,23 +505,23 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                         <div style={{fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1rem', lineHeight: '1.4'}}>
                           Nota: El bloqueo en navegadores requiere permisos del sistema (próximamente).
                         </div>
-                        
+
                         <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
                           <div style={{display: 'flex', gap: '0.5rem', flexDirection: 'column'}}>
                             <div style={{display: 'flex', gap: '0.5rem'}}>
-                              <input 
-                                type="text" 
-                                className="form-input" 
-                                style={{flex: 1}} 
-                                value={newWebsite} 
-                                onChange={e => setNewWebsite(e.target.value)} 
-                                placeholder="Ej. instagram.com" 
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{flex: 1}}
+                                value={newWebsite}
+                                onChange={e => setNewWebsite(e.target.value)}
+                                placeholder="Ej. instagram.com"
                                 onKeyDown={e => e.key === 'Enter' && handleAddWebsite()}
                                 disabled={!(formData.studyPreferences?.strictFocusMode)}
                               />
-                              <button 
-                                className="btn btn-secondary" 
-                                style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} 
+                              <button
+                                className="btn btn-secondary"
+                                style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}
                                 onClick={handleAddWebsite}
                                 disabled={!(formData.studyPreferences?.strictFocusMode) || !newWebsite.trim()}
                               >
@@ -436,8 +535,8 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                             {(formData.studyPreferences?.restrictedWebsites || []).map(site => (
                               <span key={site} className="badge" style={{display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', padding: '0.4rem 0.75rem', background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', opacity: formData.studyPreferences?.strictFocusMode ? 1 : 0.5}}>
                                 {site}
-                                <button 
-                                  style={{background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--color-text-muted)'}} 
+                                <button
+                                  style={{background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--color-text-muted)'}}
                                   onClick={() => handleRemoveWebsite(site)}
                                   disabled={!(formData.studyPreferences?.strictFocusMode)}
                                 >
