@@ -1,4 +1,4 @@
-import { Task, Activity, StudentProfile } from './types';
+import type { Task, Activity, StudentProfile } from './types.ts';
 
 interface FreeBlock {
   start: number; // minutes from 00:00
@@ -35,19 +35,23 @@ export function generateStudyPlan(
   const proposals: PlannerProposal[] = [];
   
   // Filter valid pending tasks to schedule
+  const defaultSessionDuration = profile.studyPreferences?.preferredSessionDuration || 25;
   let pendingTasks = tasks
-    .filter(t => t.status === 'pending' && (t.estimatedDuration || 0) > 0)
+    .filter(t => t.status === 'pending')
     .map(t => {
+      const effectiveEstimated = typeof t.estimatedDuration === 'number' && t.estimatedDuration > 0
+        ? t.estimatedDuration
+        : defaultSessionDuration;
       const existingBlocks = activities.filter(a => a.category === 'study_block' && a.taskId === t.id);
       let scheduledDuration = 0;
       for (const b of existingBlocks) {
         scheduledDuration += (parseTime(b.endTime) - parseTime(b.startTime));
       }
-      return { ...t, remainingDuration: Math.max(0, t.estimatedDuration! - scheduledDuration) };
+      return { ...t, remainingDuration: Math.max(0, effectiveEstimated - scheduledDuration) };
     })
     .filter(t => t.remainingDuration > 0);
 
-  // Sort tasks: urgent first, then by priority
+  // Sort tasks: urgent first by due date, then by priority
   pendingTasks.sort((a, b) => {
     if (a.dueDate && b.dueDate) {
       if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
@@ -64,6 +68,7 @@ export function generateStudyPlan(
 
   const sessionDuration = profile.studyPreferences?.preferredSessionDuration || 25;
   const breakDuration = profile.studyPreferences?.preferredBreakDuration || 5;
+  const nowMinutes = startDate.getHours() * 60 + startDate.getMinutes();
 
   for (let i = 0; i < daysToPlan; i++) {
     const currentDate = new Date(startDate);
@@ -89,6 +94,12 @@ export function generateStudyPlan(
       freeBlocks = subtractBlock(freeBlocks, parseTime(c.startTime), parseTime(c.endTime));
     }
 
+    // Subtract unavailable blocks (personal commitments, lunch, etc.)
+    const dayUnavailable = profile.unavailableBlocks?.filter(u => u.dayOfWeek === dayOfWeek) || [];
+    for (const u of dayUnavailable) {
+      freeBlocks = subtractBlock(freeBlocks, parseTime(u.startTime), parseTime(u.endTime));
+    }
+
     // Subtract fixed calendar activities and existing study blocks on this date
     const dayActivities = activities.filter(a => a.date === dateStr);
     for (const a of dayActivities) {
@@ -97,13 +108,22 @@ export function generateStudyPlan(
 
     // Fill free blocks with tasks
     for (let fb of freeBlocks) {
-      let currentTime = fb.start;
+      let startMin = fb.start;
+      if (i === 0 && startMin < nowMinutes) {
+        startMin = nowMinutes;
+      }
+      if (startMin >= fb.end) continue;
+      let currentTime = startMin;
       
       for (const task of pendingTasks) {
         if (task.remainingDuration <= 0) continue;
+        // Do not schedule task after its due date
+        if (task.dueDate && dateStr > task.dueDate) continue;
 
-        while (task.remainingDuration > 0 && currentTime + sessionDuration <= fb.end) {
-          const chunkDuration = Math.min(task.remainingDuration, sessionDuration);
+        while (task.remainingDuration > 0 && currentTime < fb.end) {
+          const availableSlot = fb.end - currentTime;
+          const chunkDuration = Math.min(task.remainingDuration, sessionDuration, availableSlot);
+          if (chunkDuration <= 0) break;
           
           proposals.push({
             taskId: task.id,
@@ -115,7 +135,12 @@ export function generateStudyPlan(
           });
 
           task.remainingDuration -= chunkDuration;
-          currentTime += chunkDuration + breakDuration; // Add break after session
+          const nextWithBreak = currentTime + chunkDuration + breakDuration;
+          if (nextWithBreak <= fb.end && task.remainingDuration > 0) {
+            currentTime = nextWithBreak;
+          } else {
+            currentTime += chunkDuration;
+          }
         }
       }
     }
