@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { StudentProfile, ClassSession } from './types';
-import { checkScheduleConflict } from './scheduleValidation';
+import {
+  DAY_NAMES,
+  FIELD_LIMITS,
+  validateClassSessionInput,
+  validateSubjectName,
+} from './scheduleValidation';
 
 interface Props {
   profile: StudentProfile;
@@ -14,8 +19,8 @@ interface Props {
 export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteClass, onUpdateProfile }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<ClassSession | null>(null);
-
-  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const [quickSubject, setQuickSubject] = useState('');
+  const [quickSubjectError, setQuickSubjectError] = useState('');
 
   const openNew = () => {
     setEditingSession(null);
@@ -27,6 +32,18 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
     setIsModalOpen(true);
   };
 
+  const handleQuickAddSubject = () => {
+    const validationErr = validateSubjectName(quickSubject, profile.subjects);
+    if (validationErr) {
+      setQuickSubjectError(validationErr);
+      return;
+    }
+    const trimmed = quickSubject.trim();
+    onUpdateProfile({ ...profile, subjects: [...profile.subjects, trimmed] });
+    setQuickSubject('');
+    setQuickSubjectError('');
+  };
+
   return (
     <div className="main-content">
       <div className="screen-header">
@@ -34,88 +51,83 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
           <h1>Horario Académico</h1>
           <p>Organiza tus clases semanales y actividades fijas.</p>
         </div>
-        <button className="btn btn-primary" onClick={openNew}>
+        <button className="btn btn-primary" onClick={openNew} disabled={profile.subjects.length === 0}>
           <Icons.Plus /> Nueva clase
         </button>
       </div>
 
       {profile.subjects.length === 0 && profile.classTimetable.length === 0 ? (
-        <div className="empty-state dash-card" style={{marginTop: '2rem'}}>
+        <div className="empty-state dash-card" style={{ marginTop: '2rem' }}>
           <Icons.Calendar />
           <h3>No has registrado materias</h3>
           <p>Para crear tu horario, primero necesitas registrar tus asignaturas.</p>
-          <div style={{display: 'flex', gap: '0.5rem', maxWidth: '400px', margin: '2rem auto 0'}}>
-            <input 
-              id="new-subject-input"
-              type="text" 
-              className="form-input" 
-              placeholder="Ej. Matemáticas"
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  const val = e.currentTarget.value.trim();
-                  if (val && !profile.subjects.includes(val)) {
-                    onUpdateProfile({ ...profile, subjects: [...profile.subjects, val] });
-                    e.currentTarget.value = '';
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '420px', margin: '2rem auto 0' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                id="new-subject-input"
+                type="text"
+                className="form-input"
+                style={{ flex: 1 }}
+                value={quickSubject}
+                maxLength={FIELD_LIMITS.subjectName}
+                placeholder="Ej. Matemáticas"
+                onChange={e => {
+                  setQuickSubject(e.target.value);
+                  if (quickSubjectError) setQuickSubjectError('');
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleQuickAddSubject();
                   }
-                }
-              }}
-            />
-            <button className="btn btn-primary" onClick={() => {
-              const input = document.getElementById('new-subject-input') as HTMLInputElement;
-              const val = input.value.trim();
-              if (val && !profile.subjects.includes(val)) {
-                onUpdateProfile({ ...profile, subjects: [...profile.subjects, val] });
-                input.value = '';
-              }
-            }}>Añadir</button>
+                }}
+              />
+              <button className="btn btn-primary" onClick={handleQuickAddSubject}>
+                Añadir
+              </button>
+            </div>
+            {quickSubjectError && (
+              <div className="error-msg" style={{ margin: 0, textAlign: 'left' }}>
+                {quickSubjectError}
+              </div>
+            )}
           </div>
         </div>
       ) : (
-        <div className="timetable-grid" style={{
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-          gap: '1.5rem', 
-          marginTop: '2rem'
-        }}>
-          {days.map((dayName, index) => {
+        <div className="timetable-grid">
+          {DAY_NAMES.map((dayName, index) => {
             const dayNum = index + 1;
             const dayClasses = profile.classTimetable
               .filter(c => c.dayOfWeek === dayNum)
               .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
             return (
-              <div key={dayNum} className="dash-card" style={{padding: '1.5rem'}}>
-                <h3 style={{margin: '0 0 1.5rem 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem'}}>
+              <div key={dayNum} className="dash-card timetable-day-card">
+                <h3 className="timetable-day-header">
                   {dayName}
-                  <span className="badge" style={{background: 'var(--color-bg-base)'}}>{dayClasses.length}</span>
+                  <span className="badge" style={{ background: 'var(--color-bg-base)' }}>{dayClasses.length}</span>
                 </h3>
-                
-                <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {dayClasses.length === 0 ? (
-                    <p style={{color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center'}}>Sin clases</p>
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center', margin: '0.5rem 0' }}>Sin clases</p>
                   ) : dayClasses.map(c => (
-                    <div 
-                      key={c.id} 
+                    <div
+                      key={c.id}
+                      className="timetable-class-card"
                       onClick={() => openEdit(c)}
-                      style={{
-                        background: 'var(--color-bg-base)', 
-                        border: '1px solid var(--color-border)',
-                        borderLeft: '4px solid var(--color-accent-main)',
-                        borderRadius: 'var(--radius-sm)',
-                        padding: '1rem',
-                        cursor: 'pointer',
-                        transition: 'var(--transition-smooth)'
-                      }}
                     >
-                      <h4 style={{margin: '0 0 0.5rem 0', color: 'var(--color-text-main)'}}>{c.subject}</h4>
-                      <p style={{margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem'}}>
-                        <Icons.Clock /> {c.startTime} - {c.endTime}
+                      <h4 className="timetable-class-title">{c.subject}</h4>
+                      <p className="timetable-class-time">
+                        <Icons.Clock />
+                        <span>{c.startTime} - {c.endTime}</span>
                       </p>
-                      {(c.room || c.description) && (
-                        <p style={{margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)'}}>
-                          {c.room && <span style={{display: 'block'}}>📍 {c.room}</span>}
-                          {c.teacher && <span style={{display: 'block'}}>👤 {c.teacher}</span>}
-                        </p>
+                      {(c.room || c.teacher || c.description) && (
+                        <div className="timetable-class-meta">
+                          {c.room && <span>📍 {c.room}</span>}
+                          {c.teacher && <span>👤 {c.teacher}</span>}
+                          {c.description && <span>📝 {c.description}</span>}
+                        </div>
                       )}
                     </div>
                   ))}
@@ -126,8 +138,8 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
         </div>
       )}
 
-      <ClassModal 
-        isOpen={isModalOpen} 
+      <ClassModal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={(data: Omit<ClassSession, 'id'>) => {
           if (editingSession) onUpdateClass(editingSession.id, data);
@@ -159,7 +171,15 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
 
   React.useEffect(() => {
     if (editingSession) {
-      setFormData(editingSession);
+      setFormData({
+        subject: editingSession.subject,
+        description: editingSession.description || '',
+        dayOfWeek: editingSession.dayOfWeek,
+        startTime: editingSession.startTime,
+        endTime: editingSession.endTime,
+        room: editingSession.room || '',
+        teacher: editingSession.teacher || '',
+      });
     } else {
       setFormData({
         subject: profile.subjects[0] || '',
@@ -180,85 +200,163 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
     e.preventDefault();
     setError('');
 
-    if (!formData.subject) {
-      setError('Debes seleccionar una materia.');
+    const sanitizedData: Omit<ClassSession, 'id'> = {
+      subject: (formData.subject || '').trim(),
+      dayOfWeek: Number(formData.dayOfWeek),
+      startTime: (formData.startTime || '').trim(),
+      endTime: (formData.endTime || '').trim(),
+      room: (formData.room || '').trim() || undefined,
+      teacher: (formData.teacher || '').trim() || undefined,
+      description: (formData.description || '').trim() || undefined,
+    };
+
+    const validationError = validateClassSessionInput(
+      sanitizedData,
+      profile.classTimetable || [],
+      editingSession?.id
+    );
+
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
-    try {
-      const conflict = checkScheduleConflict(formData, profile.classTimetable, editingSession?.id);
-      if (conflict) {
-        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        setError(`Cruce de horario con "${conflict.subject}" (${days[conflict.dayOfWeek-1]} de ${conflict.startTime} a ${conflict.endTime}).`);
-        return;
-      }
-      onSave(formData);
-    } catch (err: any) {
-      setError(err.message || 'Error al guardar la clase.');
-    }
+    onSave(sanitizedData);
   };
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <h2>{editingSession ? 'Editar clase' : 'Nueva clase'}</h2>
-        
-        {error && <div style={{background: 'var(--prio-high-bg)', color: 'var(--prio-high-text)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.9rem'}}>{error}</div>}
+  const descLength = (formData.description || '').length;
 
-        <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content timetable-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">{editingSession ? 'Editar clase' : 'Nueva clase'}</h2>
+          <button type="button" className="modal-close" onClick={onClose}>
+            <Icons.Close />
+          </button>
+        </div>
+
+        {error && <div className="error-msg">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="timetable-modal-form" noValidate>
           <div className="form-group">
-            <label className="form-label">Materia</label>
-            <select className="form-select" value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} required>
-              {profile.subjects.map((s: string) => <option key={s} value={s}>{s}</option>)}
+            <label className="form-label">Materia *</label>
+            <select
+              className="form-select"
+              value={formData.subject}
+              onChange={e => setFormData({ ...formData, subject: e.target.value })}
+              required
+            >
+              {profile.subjects.map((s: string) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
           </div>
 
-          <div style={{display: 'flex', gap: '1rem'}}>
-            <div className="form-group" style={{flex: 1}}>
-              <label className="form-label">Día de la semana</label>
-              <select className="form-select" value={formData.dayOfWeek} onChange={e => setFormData({...formData, dayOfWeek: parseInt(e.target.value)})}>
-                <option value={1}>Lunes</option>
-                <option value={2}>Martes</option>
-                <option value={3}>Miércoles</option>
-                <option value={4}>Jueves</option>
-                <option value={5}>Viernes</option>
-                <option value={6}>Sábado</option>
-                <option value={7}>Domingo</option>
-              </select>
+          <div className="timetable-schedule-box">
+            <div className="timetable-schedule-box-header">
+              <Icons.Clock />
+              <span>Horario de la sesión</span>
+            </div>
+            <div className="timetable-time-grid">
+              <div className="form-group">
+                <label className="form-label">Día *</label>
+                <select
+                  className="form-select"
+                  value={formData.dayOfWeek}
+                  onChange={e => setFormData({ ...formData, dayOfWeek: parseInt(e.target.value, 10) })}
+                >
+                  {DAY_NAMES.map((d, idx) => (
+                    <option key={d} value={idx + 1}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Inicio *</label>
+                <input
+                  type="time"
+                  className="form-input"
+                  min="00:00"
+                  max="23:59"
+                  value={formData.startTime}
+                  onChange={e => setFormData({ ...formData, startTime: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Fin *</label>
+                <input
+                  type="time"
+                  className="form-input"
+                  min="00:00"
+                  max="23:59"
+                  value={formData.endTime}
+                  onChange={e => setFormData({ ...formData, endTime: e.target.value })}
+                  required
+                />
+              </div>
             </div>
           </div>
 
-          <div style={{display: 'flex', gap: '1rem'}}>
-            <div className="form-group" style={{flex: 1}}>
-              <label className="form-label">Hora de inicio</label>
-              <input type="time" className="form-input" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} required />
+          <div className="timetable-details-grid">
+            <div className="form-group">
+              <label className="form-label">
+                <span>Aula / Ubicación</span>
+                <span className="char-counter">{(formData.room || '').length}/{FIELD_LIMITS.classRoom}</span>
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                maxLength={FIELD_LIMITS.classRoom}
+                value={formData.room || ''}
+                onChange={e => setFormData({ ...formData, room: e.target.value })}
+                placeholder="Ej. Aula 102"
+              />
             </div>
-            <div className="form-group" style={{flex: 1}}>
-              <label className="form-label">Hora de fin</label>
-              <input type="time" className="form-input" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} required />
+
+            <div className="form-group">
+              <label className="form-label">
+                <span>Profesor</span>
+                <span className="char-counter">{(formData.teacher || '').length}/{FIELD_LIMITS.classTeacher}</span>
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                maxLength={FIELD_LIMITS.classTeacher}
+                value={formData.teacher || ''}
+                onChange={e => setFormData({ ...formData, teacher: e.target.value })}
+                placeholder="Nombre del docente"
+              />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Aula / Ubicación (Opcional)</label>
-            <input type="text" className="form-input" value={formData.room || ''} onChange={e => setFormData({...formData, room: e.target.value})} placeholder="Ej. Edificio A, Aula 102" />
+            <label className="form-label">
+              <span>Descripción (Opcional)</span>
+              <span className="char-counter">{descLength}/{FIELD_LIMITS.classDescription}</span>
+            </label>
+            <input
+              type="text"
+              className="form-input"
+              maxLength={FIELD_LIMITS.classDescription}
+              value={formData.description || ''}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Ej. Laboratorio práctico"
+            />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Profesor (Opcional)</label>
-            <input type="text" className="form-input" value={formData.teacher || ''} onChange={e => setFormData({...formData, teacher: e.target.value})} placeholder="Nombre del docente" />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Descripción (Opcional)</label>
-            <input type="text" className="form-input" value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Ej. Laboratorio práctico" />
-          </div>
-
-          <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '1.5rem'}}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
             {editingSession ? (
-              <button type="button" className="btn btn-secondary" style={{color: 'var(--prio-high-text)'}} onClick={() => onDelete(editingSession.id)}>Eliminar</button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ color: 'var(--prio-high-text)' }}
+                onClick={() => onDelete(editingSession.id)}
+              >
+                Eliminar
+              </button>
             ) : <div />}
-            <div style={{display: 'flex', gap: '1rem'}}>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
               <button type="submit" className="btn btn-primary">Guardar</button>
             </div>

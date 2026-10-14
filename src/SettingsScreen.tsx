@@ -2,6 +2,13 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { StudentProfile } from './types';
+import {
+  DAY_NAMES,
+  DURATION_LIMITS,
+  FIELD_LIMITS,
+  validateProfileInput,
+  validateSubjectName,
+} from './scheduleValidation';
 
 interface Props {
   theme: string;
@@ -14,6 +21,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
   const [formData, setFormData] = useState<StudentProfile>(profile);
   const [isDirty, setIsDirty] = useState(false);
   const [newSubject, setNewSubject] = useState('');
+  const [subjectError, setSubjectError] = useState('');
   const [newWebsite, setNewWebsite] = useState('');
   const [websiteError, setWebsiteError] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
@@ -28,42 +36,91 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
   const handleChange = (field: keyof StudentProfile, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setIsDirty(true);
+    if (error) setError('');
   };
 
-
   const normalizeDomain = (input: string): string | null => {
-    let val = input.trim().toLowerCase();
-    if (!val) return null;
-    val = val.replace(/^https?:\/\//, '');
-    val = val.split('/')[0].split('?')[0];
-    val = val.replace(/^www\./, '');
+    const raw = input.trim().toLowerCase();
+    if (!raw) return null;
 
-    const domainRegex = /^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]\.[a-z]{2,}$/;
-    if (domainRegex.test(val)) return val;
-    return null;
+    // Reject schemes, paths, queries, fragments, credentials, ports, spaces, and wildcards
+    if (
+      raw.includes('://') ||
+      raw.includes('/') ||
+      raw.includes('?') ||
+      raw.includes('#') ||
+      raw.includes('@') ||
+      raw.includes(':') ||
+      raw.includes('*') ||
+      /\s/.test(raw)
+    ) {
+      return null;
+    }
+
+    const val = raw.replace(/^www\./, '');
+    if (!val || val === 'localhost' || val.length > FIELD_LIMITS.domainName) return null;
+
+    const labels = val.split('.');
+    if (labels.length < 2) return null;
+
+    // Reject IPv4 addresses
+    if (labels.length === 4 && labels.every(l => /^\d+$/.test(l))) {
+      return null;
+    }
+
+    // Validate each label (supports 1-char labels like x.com and subdomains like web.whatsapp.com)
+    const labelRegex = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+    const tldRegex = /^[a-z]{2,63}$/;
+
+    if (!labels.every(l => labelRegex.test(l))) return null;
+    if (!tldRegex.test(labels[labels.length - 1])) return null;
+
+    return val;
   };
 
   const handleAddWebsite = () => {
     const normalized = normalizeDomain(newWebsite);
     if (!normalized) {
-      setWebsiteError('Dominio inválido. Ej: instagram.com');
+      setWebsiteError('Dominio inválido. Ingresa solo el dominio (ej: x.com, web.whatsapp.com, instagram.com) sin https://, rutas ni comodines.');
       return;
     }
 
     const current = formData.studyPreferences?.restrictedWebsites || [];
-    if (current.includes(normalized)) {
+    if (current.some(d => d.toLowerCase() === normalized)) {
       setWebsiteError('El dominio ya está en la lista.');
       return;
     }
 
-    handlePreferencesChange('restrictedWebsites', [...current, normalized]);
+    const updatedWebsites = [...current, normalized];
+    const newProfile: StudentProfile = {
+      ...formData,
+      studyPreferences: {
+        ...formData.studyPreferences,
+        restrictedWebsites: updatedWebsites
+      }
+    };
+
+    setFormData(newProfile);
+    onUpdateProfile(newProfile);
+    setIsDirty(false);
     setNewWebsite('');
     setWebsiteError('');
   };
 
   const handleRemoveWebsite = (domain: string) => {
     const current = formData.studyPreferences?.restrictedWebsites || [];
-    handlePreferencesChange('restrictedWebsites', current.filter(d => d !== domain));
+    const updatedWebsites = current.filter(d => d.toLowerCase() !== domain.toLowerCase());
+    const newProfile: StudentProfile = {
+      ...formData,
+      studyPreferences: {
+        ...formData.studyPreferences,
+        restrictedWebsites: updatedWebsites
+      }
+    };
+
+    setFormData(newProfile);
+    onUpdateProfile(newProfile);
+    setIsDirty(false);
   };
 
   const handlePreferencesChange = (field: keyof StudentProfile['studyPreferences'], value: any) => {
@@ -75,14 +132,19 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
       }
     }));
     setIsDirty(true);
+    if (error) setError('');
   };
 
   const addSubject = () => {
-    const val = newSubject.trim();
-    if (val && !formData.subjects.includes(val)) {
-      handleChange('subjects', [...formData.subjects, val]);
-      setNewSubject('');
+    const validationErr = validateSubjectName(newSubject, formData.subjects);
+    if (validationErr) {
+      setSubjectError(validationErr);
+      return;
     }
+    const val = newSubject.trim();
+    handleChange('subjects', [...formData.subjects, val]);
+    setNewSubject('');
+    setSubjectError('');
   };
 
   const removeSubject = (sub: string) => {
@@ -91,6 +153,12 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
   const handleSave = () => {
     setError('');
+    const profileErr = validateProfileInput(formData);
+    if (profileErr) {
+      setError(profileErr);
+      return;
+    }
+
     const removedSubjects = profile.subjects.filter(s => !formData.subjects.includes(s));
     for (const sub of removedSubjects) {
       const isUsed = formData.classTimetable?.some(c => c.subject === sub);
@@ -99,7 +167,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
         return;
       }
     }
-    
+
     if (removedSubjects.length > 0 || (profile.studyAvailability !== formData.studyAvailability)) {
       setShowConfirm(true);
     } else {
@@ -108,13 +176,27 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
   };
 
   const confirmSave = () => {
-    onUpdateProfile(formData);
+    const sanitized: StudentProfile = {
+      ...formData,
+      name: formData.name.trim(),
+      program: formData.program.trim(),
+      semester: formData.semester.trim(),
+    };
+    setFormData(sanitized);
+    onUpdateProfile(sanitized);
     setIsDirty(false);
     setShowConfirm(false);
   };
 
   const addAvailability = (dayOfWeek: number) => {
-    const newAvail = { dayOfWeek, startTime: '14:00', endTime: '20:00' };
+    const existingForDay = (formData.studyAvailability || []).filter(a => a.dayOfWeek === dayOfWeek);
+    let defaultStart = '14:00';
+    let defaultEnd = '20:00';
+    if (existingForDay.some(a => a.startTime < '20:00' && a.endTime > '14:00')) {
+      defaultStart = '20:00';
+      defaultEnd = '22:00';
+    }
+    const newAvail = { dayOfWeek, startTime: defaultStart, endTime: defaultEnd };
     handleChange('studyAvailability', [...(formData.studyAvailability || []), newAvail]);
   };
 
@@ -126,11 +208,11 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
   const updateAvailability = (index: number, field: string, value: string) => {
     const newAvail = [...(formData.studyAvailability || [])];
-    (newAvail[index] as any)[field] = field === 'dayOfWeek' ? parseInt(value) : value;
+    (newAvail[index] as any)[field] = field === 'dayOfWeek' ? parseInt(value, 10) : value;
     handleChange('studyAvailability', newAvail);
   };
 
-  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const days = DAY_NAMES;
 
   return (
     <div className="main-content" style={{paddingBottom: '4rem', display: 'flex', flexDirection: 'column'}}>
@@ -185,7 +267,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                       <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Nombre de usuario</div>
                       <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tu identidad visible en Studia.</div>
                     </div>
-                    <input type="text" className="form-input" style={{width: '250px'}} value={formData.name} onChange={e => handleChange('name', e.target.value)} />
+                    <input type="text" className="form-input" style={{width: '250px'}} maxLength={FIELD_LIMITS.userName} value={formData.name} onChange={e => handleChange('name', e.target.value)} />
                   </div>
 
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
@@ -193,7 +275,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                       <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Programa académico</div>
                       <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>La carrera o grado que estudias.</div>
                     </div>
-                    <input type="text" className="form-input" style={{width: '250px'}} value={formData.program} onChange={e => handleChange('program', e.target.value)} />
+                    <input type="text" className="form-input" style={{width: '250px'}} maxLength={FIELD_LIMITS.programName} value={formData.program} onChange={e => handleChange('program', e.target.value)} />
                   </div>
 
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
@@ -201,7 +283,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                       <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Semestre actual</div>
                       <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tu nivel de progreso actual.</div>
                     </div>
-                    <input type="text" className="form-input" style={{width: '250px'}} value={formData.semester} onChange={e => handleChange('semester', e.target.value)} />
+                    <input type="text" className="form-input" style={{width: '250px'}} maxLength={FIELD_LIMITS.semesterName} value={formData.semester} onChange={e => handleChange('semester', e.target.value)} />
                   </div>
 
                 </div>
@@ -245,17 +327,35 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
                     <div>
                       <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Duración Pomodoro (min)</div>
-                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tiempo para cada bloque de enfoque.</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tiempo para cada bloque de enfoque ({DURATION_LIMITS.focusMinMinutes}–{DURATION_LIMITS.focusMaxMinutes} min).</div>
                     </div>
-                    <input type="number" className="form-input" style={{width: '100px'}} value={formData.studyPreferences?.preferredSessionDuration || 25} onChange={e => handlePreferencesChange('preferredSessionDuration', parseInt(e.target.value))} />
+                    <input
+                      type="number"
+                      className="form-input"
+                      style={{width: '100px'}}
+                      min={DURATION_LIMITS.focusMinMinutes}
+                      max={DURATION_LIMITS.focusMaxMinutes}
+                      step="1"
+                      value={formData.studyPreferences?.preferredSessionDuration ?? ''}
+                      onChange={e => handlePreferencesChange('preferredSessionDuration', e.target.value === '' ? NaN : Number(e.target.value))}
+                    />
                   </div>
 
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                     <div>
                       <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Descanso corto (min)</div>
-                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Pausa entre sesiones de estudio.</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Pausa entre sesiones de estudio ({DURATION_LIMITS.breakMinMinutes}–{DURATION_LIMITS.breakMaxMinutes} min).</div>
                     </div>
-                    <input type="number" className="form-input" style={{width: '100px'}} value={formData.studyPreferences?.preferredBreakDuration || 5} onChange={e => handlePreferencesChange('preferredBreakDuration', parseInt(e.target.value))} />
+                    <input
+                      type="number"
+                      className="form-input"
+                      style={{width: '100px'}}
+                      min={DURATION_LIMITS.breakMinMinutes}
+                      max={DURATION_LIMITS.breakMaxMinutes}
+                      step="1"
+                      value={formData.studyPreferences?.preferredBreakDuration ?? ''}
+                      onChange={e => handlePreferencesChange('preferredBreakDuration', e.target.value === '' ? NaN : Number(e.target.value))}
+                    />
                   </div>
 
                 </div>
@@ -270,9 +370,24 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                 <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Materias Inscritas</h4>
                 <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
-                  <div style={{display: 'flex', gap: '0.5rem'}}>
-                    <input type="text" className="form-input" style={{flex: 1}} value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="Ej. Álgebra Lineal" onKeyDown={e => e.key === 'Enter' && addSubject()} />
-                    <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={addSubject}><Icons.Plus /> Añadir</button>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                    <div style={{display: 'flex', gap: '0.5rem'}}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{flex: 1}}
+                        maxLength={FIELD_LIMITS.subjectName}
+                        value={newSubject}
+                        onChange={e => {
+                          setNewSubject(e.target.value);
+                          if (subjectError) setSubjectError('');
+                        }}
+                        placeholder="Ej. Álgebra Lineal"
+                        onKeyDown={e => e.key === 'Enter' && addSubject()}
+                      />
+                      <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={addSubject}><Icons.Plus /> Añadir</button>
+                    </div>
+                    {subjectError && <div style={{color: 'var(--color-destructive)', fontSize: '0.8rem'}}>{subjectError}</div>}
                   </div>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
                     {formData.subjects.map(s => (
@@ -298,9 +413,9 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                         <select className="form-select" style={{flex: 1, padding: '0.4rem'}} value={avail.dayOfWeek} onChange={e => updateAvailability(i, 'dayOfWeek', e.target.value)}>
                           {days.map((d, idx) => <option key={d} value={idx + 1}>{d}</option>)}
                         </select>
-                        <input type="time" className="form-input" style={{width: '90px', padding: '0.4rem'}} value={avail.startTime} onChange={e => updateAvailability(i, 'startTime', e.target.value)} />
+                        <input type="time" min="00:00" max="23:59" className="form-input" style={{width: '105px', padding: '0.4rem'}} value={avail.startTime} onChange={e => updateAvailability(i, 'startTime', e.target.value)} />
                         <span style={{color: 'var(--color-text-muted)'}}>-</span>
-                        <input type="time" className="form-input" style={{width: '90px', padding: '0.4rem'}} value={avail.endTime} onChange={e => updateAvailability(i, 'endTime', e.target.value)} />
+                        <input type="time" min="00:00" max="23:59" className="form-input" style={{width: '105px', padding: '0.4rem'}} value={avail.endTime} onChange={e => updateAvailability(i, 'endTime', e.target.value)} />
                         <button className="btn btn-secondary" style={{padding: '0.4rem', color: 'var(--color-destructive)', display: 'flex', alignItems: 'center', justifyContent: 'center'}} onClick={() => removeAvailability(i)}><Icons.Trash /></button>
                       </div>
                     ))}
@@ -310,7 +425,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                         {days.map((d, idx) => <option key={d} value={idx + 1}>{d}</option>)}
                       </select>
                       <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={() => {
-                        const day = parseInt((document.getElementById('new-avail-day') as HTMLSelectElement).value);
+                        const day = parseInt((document.getElementById('new-avail-day') as HTMLSelectElement).value, 10);
                         addAvailability(day);
                       }}><Icons.Plus /> Añadir ventana</button>
                     </div>
@@ -350,8 +465,16 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                       <input type="checkbox"
                         checked={formData.studyPreferences?.strictFocusMode || false}
                         onChange={(e) => {
-                          handlePreferencesChange('strictFocusMode', e.target.checked);
-                          setIsDirty(true);
+                          const newProfile: StudentProfile = {
+                            ...formData,
+                            studyPreferences: {
+                              ...formData.studyPreferences,
+                              strictFocusMode: e.target.checked
+                            }
+                          };
+                          setFormData(newProfile);
+                          onUpdateProfile(newProfile);
+                          setIsDirty(false);
                         }}
                       />
                       <span className="slider round"></span>
@@ -383,8 +506,16 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                                   onChange={() => {
                                     const current = formData.studyPreferences?.restrictedApps || [];
                                     const updated = isSelected ? current.filter(id => id !== app.id) : [...current, app.id];
-                                    handlePreferencesChange('restrictedApps', updated);
-                                    setIsDirty(true);
+                                    const newProfile: StudentProfile = {
+                                      ...formData,
+                                      studyPreferences: {
+                                        ...formData.studyPreferences,
+                                        restrictedApps: updated
+                                      }
+                                    };
+                                    setFormData(newProfile);
+                                    onUpdateProfile(newProfile);
+                                    setIsDirty(false);
                                   }}
                                   disabled={!(formData.studyPreferences?.strictFocusMode)}
                                   style={{cursor: 'pointer'}}
@@ -503,7 +634,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                       <div style={{flex: '1 1 300px'}}>
                         <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 0.25rem 0'}}>Sitios Web</h5>
                         <div style={{fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1rem', lineHeight: '1.4'}}>
-                          Nota: El bloqueo en navegadores requiere permisos del sistema (próximamente).
+                          Los dominios configurados se bloquearán en el archivo <code>hosts</code> de Windows durante el Modo Enfoque (requiere permisos UAC). Nota: el navegador puede reutilizar conexiones o caché de pestañas que ya estaban abiertas antes de iniciar la sesión; cierra las pestañas abiertas del sitio o prueba en una ventana nueva/incógnito.
                         </div>
 
                         <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
@@ -513,6 +644,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                                 type="text"
                                 className="form-input"
                                 style={{flex: 1}}
+                                maxLength={FIELD_LIMITS.domainName}
                                 value={newWebsite}
                                 onChange={e => setNewWebsite(e.target.value)}
                                 placeholder="Ej. instagram.com"

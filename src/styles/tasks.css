@@ -1,0 +1,21 @@
+/* --- Tasks Screen Styles --- */
+.tasks-filters { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.filter-btn { padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--color-border); background: var(--color-surface); font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--color-text-muted); }
+.filter-btn.active { background: var(--color-accent-soft); color: var(--color-accent-main); border-color: transparent; }
+
+.task-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.task-item {
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; transition: var(--transition-smooth);
+}
+.task-item:hover { border-color: var(--color-text-muted); }
+.task-checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--color-border); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.task-checkbox.completed { background: var(--color-accent-main); border-color: var(--color-accent-main); color: white; }
+.task-checkbox svg { width: 14px; height: 14px; opacity: 0; }
+.task-checkbox.completed svg { opacity: 1; }
+.task-content { flex: 1; }
+.task-title { margin: 0 0 0.25rem 0; font-size: 1rem; font-weight: 600; color: var(--color-text-main); }
+.task-item.is-completed .task-title { text-decoration: line-through; color: var(--color-text-muted); }
+.task-meta { font-size: 0.8rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 1rem; }
+.task-actions { display: flex; gap: 0.5rem; opacity: 0; }
+.task-item:hover .task-actions { opacity: 1; }

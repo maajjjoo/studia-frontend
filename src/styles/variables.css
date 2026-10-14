@@ -1,0 +1,63 @@
+/* --- CSS Variables & Theme System --- */
+:root {
+  /* Layout & Shared Variables */
+  --sidebar-width: 250px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.05);
+  --transition-smooth: all 0.2s ease-in-out;
+
+  /* Global Neutrals */
+  --color-bg-base: #F8F9FA;
+  --color-surface: #FFFFFF;
+  --color-border: #E9ECEF;
+  --color-text-main: #343A40;
+  --color-text-muted: #868E96;
+  
+  --color-destructive: #E03131;
+  --color-destructive-bg: #FFF5F5;
+
+  /* Theme A: Muted Rose (Default) */
+  --color-accent-soft: #FDF3F5;
+  --color-accent-main: #D48E9B;
+  --color-accent-hover: #C27685;
+  --color-btn-dark: #C27685;
+
+  /* Card Colors */
+  --card-tasks-bg: #FFFFFF;
+  --card-tasks-accent: var(--color-accent-main);
+  --card-calendar-bg: #FFFFFF;
+  --card-calendar-accent: var(--color-accent-main);
+  --card-ai-bg: #FFFFFF;
+  --card-focus-bg: #FFFFFF;
+  --card-progress-bg: #FFFFFF;
+
+  /* Badges & Priorities */
+  --prio-high-bg: #FFF5F5; --prio-high-text: #E03131;
+  --prio-medium-bg: #FDF3F5; --prio-medium-text: #D48E9B;
+  --prio-low-bg: #F8F9FA; --prio-low-text: #868E96;
+  
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-theme="blue"] {
+  /* Theme B: Muted Blue */
+  --color-accent-soft: #F3F8FC; 
+  --color-accent-main: #7FA3C1;
+  --color-accent-hover: #668CAE;
+  --color-btn-dark: #668CAE;
+
+  /* Badges & Priorities */
+  --prio-medium-bg: #F3F8FC; --prio-medium-text: #7FA3C1;
+}
+
+/* Base resets */
+body {
+  margin: 0; padding: 0; background-color: var(--color-bg-base); color: var(--color-text-main);
+  overflow: hidden; user-select: none;
+}
+input, textarea, select { font-family: inherit; }
