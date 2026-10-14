@@ -291,6 +291,36 @@ export function runAiIntegrationTests(): number {
     passed++;
   }
 
+  // 4. Verification of AI error mapping (Timeout, Backend unavailable, Invalid key, Empty response)
+  {
+    const timeoutMsg = mapAiErrorToUserMessage(createTypedAiError('TIMEOUT', 'Timeout exceeded'));
+    assert(
+      timeoutMsg.includes('demasiado tiempo') && timeoutMsg.includes('intentarlo'),
+      'Timeout error should inform user clearly and suggest retrying'
+    );
+
+    const netMsg = mapAiErrorToUserMessage(createTypedAiError('NETWORK_ERROR', 'Connection failed'));
+    assert(
+      netMsg.includes('Internet') || netMsg.includes('servidor'),
+      'Network error should guide user to check Internet and server'
+    );
+
+    const invalidKeyMsg = mapAiErrorToUserMessage(
+      createTypedAiError('INVALID_API_KEY', 'Auth failed')
+    );
+    assert(
+      invalidKeyMsg.includes('GEMINI_API_KEY') && invalidKeyMsg.includes('backend'),
+      'Invalid key error must indicate problem is on the backend, not ask client for key'
+    );
+
+    const emptyMsg = mapAiErrorToUserMessage(createTypedAiError('EMPTY_RESPONSE', 'Empty response'));
+    assert(
+      emptyMsg.includes('vacía'),
+      'Empty response must be clearly reported in Spanish'
+    );
+    passed++;
+  }
+
   return passed;
 }
 
