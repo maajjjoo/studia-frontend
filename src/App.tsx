@@ -19,14 +19,13 @@ import { ProgressScreen } from "./screens/ProgressScreen";
 import { Sidebar } from "./components/Sidebar";
 import { TaskModal } from "./components/TaskModal";
 import { ActivityModal } from "./components/ActivityModal";
-import { Activity } from "./types";
 
 function App() {
   const [activeTab, setActiveTab] = useState("inicio");
   const { theme, changeTheme } = useTheme();
   const { profile, isLoaded: profileLoaded, saveProfile, addClassSession, updateClassSession, deleteClassSession } = useProfile();
   const { tasks, isLoaded: tasksLoaded, addTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
-  const { activities, isScheduleLoaded, addActivity, updateActivity, deleteActivity } = useSchedule();
+  const { activities, isScheduleLoaded, addActivity, addActivities, updateActivity, deleteActivity } = useSchedule();
   const focus = useFocus();
   const ai = useAi();
 
@@ -67,7 +66,7 @@ function App() {
             tasks={tasks}
             activities={activities}
             onSaveBlocks={(blocks) => {
-              blocks.forEach(b => addActivity(b as Activity));
+              addActivities(blocks);
               setActiveTab('calendario');
             }}
           />
