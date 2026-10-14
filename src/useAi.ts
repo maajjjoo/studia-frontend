@@ -1,40 +1,45 @@
-import { useState, useEffect, useCallback } from 'react';
-import { AiMessage, Task, Activity, FocusSession } from './types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { AiMessage } from './types.ts';
+import type { AiContextData, AiServiceError } from './utils/aiClient.ts';
+import {
+  buildChatRequestPayload,
+  formatMessageTooLongError,
+  invokeAiAssistant,
+  mapAiErrorToUserMessage,
+} from './utils/aiClient.ts';
+import { AI_CONTEXT_CAPS } from './utils/aiContextBuilder.ts';
 
-// Clean typed abstraction for the AI Provider integration
-export interface AiContextData {
-  tasks: Task[];
-  activities: Activity[];
-  focusSessions: FocusSession[];
-}
-
-export interface AiServiceError extends Error {
-  code?: string;
-}
-
-// Abstract Service function
-// In a real implementation, this would call Tauri IPC or an external API
-export async function invokeAiAssistant(_messages: AiMessage[], _context: AiContextData): Promise<string> {
-  // We do not simulate fake conversations.
-  // We throw a specific error to explain integration requirements.
-  const error = new Error("INTEGRATION_REQUIRED") as AiServiceError;
-  error.code = "INTEGRATION_REQUIRED";
-  throw error;
-}
+export type { AiContextData, AiServiceError };
+export {
+  buildChatRequestPayload,
+  formatMessageTooLongError,
+  invokeAiAssistant,
+  mapAiErrorToUserMessage,
+};
 
 export function useAi() {
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canRetry, setCanRetry] = useState(false);
+
+  const inFlightRef = useRef(false);
+  const lastContextRef = useRef<AiContextData | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('studia_ai_v1');
     if (saved) {
       try {
-        setMessages(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter(
+            (m: AiMessage) => m && (m.role === 'user' || m.role === 'assistant')
+          );
+          setMessages(cleaned);
+        }
       } catch (e) {
-        console.error("Error loading AI history", e);
+        console.error('Error loading AI history', e);
       }
     }
     setIsLoaded(true);
@@ -46,62 +51,90 @@ export function useAi() {
   }, []);
 
   const clearHistory = useCallback(() => {
+    if (inFlightRef.current) return;
     saveMessages([]);
     setError(null);
+    setCanRetry(false);
   }, [saveMessages]);
 
-  const sendMessage = useCallback(async (content: string, context: AiContextData) => {
-    if (!content.trim() || isLoading) return;
+  const executeConversationTurn = useCallback(
+    async (conversationHistory: AiMessage[], context: AiContextData) => {
+      inFlightRef.current = true;
+      setIsLoading(true);
+      setError(null);
+      setCanRetry(false);
+      lastContextRef.current = context;
 
-    setError(null);
-    setIsLoading(true);
+      try {
+        const responseContent = await invokeAiAssistant(conversationHistory, context);
 
-    const userMessage: AiMessage = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: content.trim(),
-      timestamp: Date.now()
-    };
-
-    const newMessages = [...messages, userMessage];
-    saveMessages(newMessages);
-
-    try {
-      // Call the clean typed service abstraction
-      const responseContent = await invokeAiAssistant(newMessages, context);
-      
-      const assistantMessage: AiMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: responseContent,
-        timestamp: Date.now()
-      };
-      saveMessages([...newMessages, assistantMessage]);
-
-    } catch (err: any) {
-      if (err.code === "INTEGRATION_REQUIRED") {
-        const sysMessage: AiMessage = {
+        const assistantMessage: AiMessage = {
           id: crypto.randomUUID(),
-          role: 'system',
-          content: "Actualmente, la IA no está conectada a un proveedor real. Por razones de seguridad, las claves API no deben incluirse en el frontend. Para habilitar esta función, debes configurar un proveedor (como OpenAI o Anthropic) en el backend de Tauri (`src-tauri/src/main.rs`) o en un servidor externo seguro, y conectar la función `invokeAiAssistant`.",
-          timestamp: Date.now()
+          role: 'assistant',
+          content: responseContent,
+          timestamp: Date.now(),
         };
-        saveMessages([...newMessages, sysMessage]);
-      } else {
-        setError("Hubo un error al procesar tu solicitud. Inténtalo de nuevo.");
+        saveMessages([...conversationHistory, assistantMessage]);
+        setCanRetry(false);
+      } catch (err: unknown) {
+        setError(mapAiErrorToUserMessage(err));
+        setCanRetry(true);
+      } finally {
+        inFlightRef.current = false;
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
+    },
+    [saveMessages]
+  );
 
-  }, [messages, isLoading, saveMessages]);
+  const sendMessage = useCallback(
+    async (content: string, context: AiContextData) => {
+      const trimmed = (content || '').trim();
+      if (!trimmed || isLoading || inFlightRef.current) return;
+
+      if (trimmed.length > AI_CONTEXT_CAPS.maxMessageLength) {
+        setError(formatMessageTooLongError(trimmed.length));
+        setCanRetry(false);
+        return;
+      }
+
+      const userMessage: AiMessage = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: trimmed,
+        timestamp: Date.now(),
+      };
+
+      const updatedMessages = [...messages, userMessage];
+      saveMessages(updatedMessages);
+
+      await executeConversationTurn(updatedMessages, context);
+    },
+    [messages, isLoading, saveMessages, executeConversationTurn]
+  );
+
+  const retryLastMessage = useCallback(
+    async (fallbackContext?: AiContextData) => {
+      if (isLoading || inFlightRef.current || messages.length === 0) return;
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role !== 'user') return;
+
+      const ctx = fallbackContext || lastContextRef.current;
+      if (!ctx) return;
+
+      await executeConversationTurn(messages, ctx);
+    },
+    [isLoading, messages, executeConversationTurn]
+  );
 
   return {
     isLoaded,
     messages,
     isLoading,
     error,
+    canRetry,
     sendMessage,
-    clearHistory
+    retryLastMessage,
+    clearHistory,
   };
 }
