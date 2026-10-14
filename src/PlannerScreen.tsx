@@ -28,10 +28,16 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
   const [proposals, setProposals] = useState<PlannerProposal[]>([]);
   const [rejectedIds, setRejectedIds] = useState<Set<number>>(new Set());
   const [hasGenerated, setHasGenerated] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
-  const pendingTasksWithDuration = tasks
-    .filter(t => t.status === 'pending' && (t.estimatedDuration || 0) > 0)
+  const defaultSessionDuration = profile.studyPreferences?.preferredSessionDuration || 25;
+  const allPendingTasks = tasks.filter(t => t.status === 'pending');
+
+  const pendingTasksWithDuration = allPendingTasks
     .map(t => {
+      const isDefault = !(typeof t.estimatedDuration === 'number' && t.estimatedDuration > 0);
+      const effectiveEstimated = isDefault ? defaultSessionDuration : t.estimatedDuration!;
       const scheduled = activities
         .filter(a => a.category === 'study_block' && a.taskId === t.id)
         .reduce((acc, curr) => {
@@ -39,17 +45,44 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
           const [h2, m2] = curr.endTime.split(':').map(Number);
           return acc + ((h2 * 60 + m2) - (h1 * 60 + m1));
         }, 0);
-      return { ...t, remainingDuration: Math.max(0, (t.estimatedDuration || 0) - scheduled) };
+      return {
+        ...t,
+        remainingDuration: Math.max(0, effectiveEstimated - scheduled),
+        isDefaultDuration: isDefault,
+      };
     })
     .filter(t => t.remainingDuration > 0);
 
   const totalPendingMinutes = pendingTasksWithDuration.reduce((acc, t) => acc + t.remainingDuration, 0);
 
   const handleGenerate = () => {
-    const generated = generateStudyPlan(profile, tasks, activities, new Date(), 7);
-    setProposals(generated);
-    setRejectedIds(new Set());
-    setHasGenerated(true);
+    if (isGenerating) return;
+    setInfoMessage(null);
+
+    if (allPendingTasks.length === 0) {
+      setInfoMessage('No tienes tareas pendientes para organizar. Agrega al menos una tarea en la sección Tareas antes de generar el plan.');
+      return;
+    }
+
+    if (pendingTasksWithDuration.length === 0) {
+      setInfoMessage('Todas tus tareas pendientes ya tienen bloques de estudio asignados en el calendario.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setTimeout(() => {
+      try {
+        const generated = generateStudyPlan(profile, tasks, activities, new Date(), 7);
+        setProposals(generated);
+        setRejectedIds(new Set());
+        setHasGenerated(true);
+      } catch (err: unknown) {
+        console.error('Error al generar el planificador:', err);
+        setInfoMessage('Ocurrió un error inesperado al calcular la propuesta de estudio. Revisa los datos de tu perfil.');
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 120);
   };
 
   const handleReject = (index: number) => {
@@ -105,10 +138,41 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
             Organiza tus sesiones de estudio según tus tareas académicas y el tiempo que tienes disponible.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={handleGenerate} disabled={pendingTasksWithDuration.length === 0} style={{padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-          <span style={{width: '16px', height: '16px', display: 'flex'}}><Icons.Spark /></span> {hasGenerated ? 'Regenerar propuesta' : 'Generar propuesta'}
+        <button
+          className="btn btn-primary"
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          style={{padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}
+        >
+          <span style={{width: '16px', height: '16px', display: 'flex'}}><Icons.Spark /></span>
+          {isGenerating ? 'Generando planificador...' : hasGenerated ? 'Regenerar planificador' : 'Generar planificador'}
         </button>
       </div>
+
+      {infoMessage && (
+        <div style={{
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.75rem 1.25rem',
+          background: 'var(--color-bg-base)',
+          border: '1px solid var(--color-accent-soft)',
+          borderRadius: 'var(--radius-sm)',
+          color: 'var(--color-text-main)',
+          fontSize: '0.9rem',
+        }}>
+          <span>{infoMessage}</span>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{padding: '0.25rem 0.6rem', fontSize: '0.75rem', marginLeft: '1rem'}}
+            onClick={() => setInfoMessage(null)}
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {/* Tareas por organizar (Top Section) */}
       <div className="dash-card" style={{marginBottom: '2rem', padding: '0'}}>
@@ -152,7 +216,12 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
 
                 <div style={{flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-main)', fontSize: '0.85rem', justifyContent: 'flex-end'}}>
                   <span style={{width: '16px', height: '16px', display: 'flex', color: 'var(--color-text-muted)'}}><Icons.Clock /></span>
-                  {formatDuration(t.remainingDuration)}
+                  <span>{formatDuration(t.remainingDuration)}</span>
+                  {t.isDefaultDuration && (
+                    <span style={{fontSize: '0.65rem', color: 'var(--color-accent-soft)', background: 'var(--color-bg-base)', padding: '0.1rem 0.35rem', borderRadius: '4px', border: '1px solid var(--color-border)', textTransform: 'uppercase'}} title="Duración asignada según la sesión configurada en tus preferencias">
+                      Sugerida
+                    </span>
+                  )}
                 </div>
                 
                 <div style={{marginLeft: '1rem', color: 'var(--color-text-muted)'}}>
@@ -165,7 +234,7 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
           <div className="empty-state" style={{padding: '3rem 1rem'}}>
             <Icons.CheckSquare />
             <h3 style={{marginBottom: '0.5rem'}}>Estás al día</h3>
-            <p>No tienes tareas pendientes para organizar.</p>
+            <p>{allPendingTasks.length === 0 ? 'No tienes tareas pendientes para organizar. Agrega tareas desde la sección Tareas.' : 'Todas tus tareas pendientes ya tienen bloques de estudio asignados en el calendario.'}</p>
           </div>
         )}
       </div>
@@ -179,13 +248,23 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
              <div className="empty-state dash-card" style={{height: '100%', minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
                <Icons.Calendar />
                <h3 style={{marginBottom: '0.5rem'}}>Planificador en espera</h3>
-               <p style={{maxWidth: '300px', margin: 0}}>Haz clic en "Generar propuesta" en la parte superior para crear un plan de estudio.</p>
+               <p style={{maxWidth: '320px', margin: 0}}>Haz clic en "Generar planificador" en la parte superior para crear una propuesta de estudio semanal.</p>
              </div>
           ) : proposals.length === 0 ? (
-             <div className="empty-state dash-card" style={{height: '100%', minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-               <Icons.CheckSquare />
-               <h3 style={{marginBottom: '0.5rem'}}>¡Todo planificado!</h3>
-               <p style={{maxWidth: '300px', margin: 0}}>Tus tareas pendientes ya están cubiertas en el calendario.</p>
+             <div className="empty-state dash-card" style={{height: '100%', minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem'}}>
+               {pendingTasksWithDuration.length === 0 ? (
+                 <>
+                   <Icons.CheckSquare />
+                   <h3 style={{marginBottom: '0.5rem'}}>¡Todo planificado!</h3>
+                   <p style={{maxWidth: '320px', margin: 0}}>Tus tareas pendientes ya están cubiertas en el calendario.</p>
+                 </>
+               ) : (
+                 <>
+                   <Icons.Clock />
+                   <h3 style={{marginBottom: '0.5rem'}}>Sin espacios disponibles</h3>
+                   <p style={{maxWidth: '340px', margin: 0}}>No se encontraron suficientes espacios libres en tu horario para ubicar las tareas pendientes. Revisa tu disponibilidad en Ajustes o los horarios de tus clases.</p>
+                 </>
+               )}
              </div>
           ) : (
             <div style={{display: 'flex', flexDirection: 'column', gap: '2rem'}}>
