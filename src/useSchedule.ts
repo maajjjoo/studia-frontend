@@ -19,27 +19,55 @@ export function useSchedule() {
     setIsLoaded(true);
   }, []);
 
-  const saveActivities = (newActs: Activity[]) => {
-    setActivities(newActs);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newActs));
-  };
-
   const addActivity = (act: Omit<Activity, 'id' | 'createdAt'>) => {
     const newAct: Activity = {
       ...act,
       id: crypto.randomUUID(),
       createdAt: Date.now(),
     };
-    saveActivities([...activities, newAct]);
+    setActivities(prev => {
+      const updated = [...prev, newAct];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const addActivities = (acts: Omit<Activity, 'id' | 'createdAt'>[]) => {
+    if (!acts || acts.length === 0) return;
+    const newActs: Activity[] = acts.map(act => ({
+      ...act,
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+    }));
+    setActivities(prev => {
+      const updated = [...prev, ...newActs];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const updateActivity = (id: string, updates: Partial<Activity>) => {
-    saveActivities(activities.map(a => a.id === id ? { ...a, ...updates } : a));
+    setActivities(prev => {
+      const updated = prev.map(a => (a.id === id ? { ...a, ...updates } : a));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const deleteActivity = (id: string) => {
-    saveActivities(activities.filter(a => a.id !== id));
+    setActivities(prev => {
+      const updated = prev.filter(a => a.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
   };
 
-  return { activities, isScheduleLoaded: isLoaded, addActivity, updateActivity, deleteActivity };
+  return {
+    activities,
+    isScheduleLoaded: isLoaded,
+    addActivity,
+    addActivities,
+    updateActivity,
+    deleteActivity,
+  };
 }
