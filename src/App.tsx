@@ -19,15 +19,17 @@ import { ProgressScreen } from "./screens/ProgressScreen";
 import { Sidebar } from "./components/Sidebar";
 import { TaskModal } from "./components/TaskModal";
 import { ActivityModal } from "./components/ActivityModal";
+import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
 
-function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState("inicio");
-  const { theme, changeTheme } = useTheme();
+  const { language } = useTranslation();
+  const { theme, changeTheme, appearance, changeAppearance, resolvedAppearance, toggleAppearance } = useTheme();
   const { profile, isLoaded: profileLoaded, saveProfile, addClassSession, updateClassSession, deleteClassSession } = useProfile();
   const { tasks, isLoaded: tasksLoaded, addTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
   const { activities, isScheduleLoaded, addActivity, addActivities, updateActivity, deleteActivity } = useSchedule();
   const focus = useFocus();
-  const ai = useAi();
+  const ai = useAi(language);
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
@@ -36,7 +38,7 @@ function App() {
 
   if (!profile) {
     return (
-      <div className="layout" data-theme={theme}>
+      <div className="layout">
         <OnboardingScreen onComplete={saveProfile} />
       </div>
     );
@@ -51,6 +53,9 @@ function App() {
             tasks={tasks}
             activities={activities}
             focus={focus}
+            appearance={appearance}
+            resolvedAppearance={resolvedAppearance}
+            onToggleAppearance={toggleAppearance}
             onNavigate={setActiveTab}
             onOpenNewTask={() => setIsTaskModalOpen(true)}
             onOpenNewActivity={() => setIsActivityModalOpen(true)}
@@ -90,7 +95,16 @@ function App() {
       case "progreso":
         return <ProgressScreen tasks={tasks} focus={focus} />;
       case "ajustes":
-        return <SettingsScreen theme={theme} onChangeTheme={changeTheme} profile={profile} onUpdateProfile={saveProfile} />;
+        return (
+          <SettingsScreen
+            theme={theme}
+            onChangeTheme={changeTheme}
+            appearance={appearance}
+            onChangeAppearance={changeAppearance}
+            profile={profile}
+            onUpdateProfile={saveProfile}
+          />
+        );
       default:
         return (
           <HomeScreen
@@ -98,6 +112,9 @@ function App() {
             tasks={tasks}
             activities={activities}
             focus={focus}
+            appearance={appearance}
+            resolvedAppearance={resolvedAppearance}
+            onToggleAppearance={toggleAppearance}
             onNavigate={setActiveTab}
             onOpenNewTask={() => setIsTaskModalOpen(true)}
             onOpenNewActivity={() => setIsActivityModalOpen(true)}
@@ -108,7 +125,7 @@ function App() {
   };
 
   return (
-    <div className="layout" data-theme={theme}>
+    <div className="layout">
       <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} profile={profile} />
 
       {renderContent()}
@@ -119,4 +136,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
+}

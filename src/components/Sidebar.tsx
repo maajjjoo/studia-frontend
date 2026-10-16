@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Icons } from "../Icons";
 import { StudentProfile } from "../types";
 import { getInitials } from "../utils/studyHelpers";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export interface SidebarProps {
   activeTab: string;
@@ -11,26 +12,28 @@ export interface SidebarProps {
 
 export function Sidebar({ activeTab, onSelectTab, profile }: SidebarProps) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <aside className="sidebar">
       <div className="brand"><Icons.Logo /><span>Studia</span></div>
-      <span className="menu-label">Menú</span>
+      <span className="menu-label">{t('nav.menu')}</span>
       <nav className="nav-links">
-        <button className={`nav-item ${activeTab === "inicio" ? "active" : ""}`} onClick={() => onSelectTab("inicio")}><Icons.Home /> Inicio</button>
-        <button className={`nav-item ${activeTab === "tareas" ? "active" : ""}`} onClick={() => onSelectTab("tareas")}><Icons.CheckSquare /> Tareas</button>
-        <button className={`nav-item ${activeTab === "planificador" ? "active" : ""}`} onClick={() => onSelectTab("planificador")}><Icons.Edit /> Planificador</button>
-        <button className={`nav-item ${activeTab === "horario" ? "active" : ""}`} onClick={() => onSelectTab("horario")}><Icons.Book /> Horario</button>
-        <button className={`nav-item ${activeTab === "calendario" ? "active" : ""}`} onClick={() => onSelectTab("calendario")}><Icons.Calendar /> Calendario</button>
-        <button className={`nav-item ${activeTab === "enfoque" ? "active" : ""}`} onClick={() => onSelectTab("enfoque")}><Icons.TrendingUp /> Enfoque</button>
-        <button className={`nav-item ${activeTab === "asistente" ? "active" : ""}`} onClick={() => onSelectTab("asistente")}><Icons.Spark /> Asistente IA</button>
-        <button className={`nav-item ${activeTab === "progreso" ? "active" : ""}`} onClick={() => onSelectTab("progreso")}><Icons.Activity /> Progreso</button>
+        <button className={`nav-item ${activeTab === "inicio" ? "active" : ""}`} onClick={() => onSelectTab("inicio")}><Icons.Home /> {t('nav.home')}</button>
+        <button className={`nav-item ${activeTab === "tareas" ? "active" : ""}`} onClick={() => onSelectTab("tareas")}><Icons.CheckSquare /> {t('nav.tasks')}</button>
+        <button className={`nav-item ${activeTab === "planificador" ? "active" : ""}`} onClick={() => onSelectTab("planificador")}><Icons.Edit /> {t('nav.planner')}</button>
+        <button className={`nav-item ${activeTab === "horario" ? "active" : ""}`} onClick={() => onSelectTab("horario")}><Icons.Book /> {t('nav.timetable')}</button>
+        <button className={`nav-item ${activeTab === "calendario" ? "active" : ""}`} onClick={() => onSelectTab("calendario")}><Icons.Calendar /> {t('nav.calendar')}</button>
+        <button className={`nav-item ${activeTab === "enfoque" ? "active" : ""}`} onClick={() => onSelectTab("enfoque")}><Icons.TrendingUp /> {t('nav.focus')}</button>
+        <button className={`nav-item ${activeTab === "asistente" ? "active" : ""}`} onClick={() => onSelectTab("asistente")}><Icons.Spark /> {t('nav.ai')}</button>
+        <button className={`nav-item ${activeTab === "progreso" ? "active" : ""}`} onClick={() => onSelectTab("progreso")}><Icons.Activity /> {t('nav.progress')}</button>
+        <button className={`nav-item ${activeTab === "ajustes" ? "active" : ""}`} onClick={() => onSelectTab("ajustes")}><Icons.Settings /> {t('nav.settings')}</button>
       </nav>
 
       <div className="sidebar-promo">
         <div className="promo-icon"><Icons.Activity /></div>
-        <h4>Un paso a la vez</h4>
-        <p>Tu constancia está dando frutos.</p>
+        <h4>{t('nav.promoTitle')}</h4>
+        <p>{t('nav.promoSubtitle')}</p>
       </div>
 
       <div
@@ -41,7 +44,7 @@ export function Sidebar({ activeTab, onSelectTab, profile }: SidebarProps) {
         <div className="avatar">{getInitials(profile.name)}</div>
         <div className="user-info" style={{ flex: 1 }}>
           <span className="user-name">{profile.name}</span>
-          <span className="user-role">{profile.program || 'Estudiante'}</span>
+          <span className="user-role">{profile.program || t('nav.studentRole')}</span>
         </div>
         <div style={{ color: 'var(--color-text-muted)' }}><Icons.ChevronUp /></div>
         {isProfileMenuOpen && (
@@ -56,7 +59,7 @@ export function Sidebar({ activeTab, onSelectTab, profile }: SidebarProps) {
                 <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.85rem' }}>{getInitials(profile.name)}</div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-main)' }}>{profile.name}</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{profile.program || 'Estudiante'}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{profile.program || t('nav.studentRole')}</span>
                 </div>
               </div>
               <div style={{ padding: '0.5rem' }}>
@@ -65,7 +68,7 @@ export function Sidebar({ activeTab, onSelectTab, profile }: SidebarProps) {
                   style={{ width: '100%', justifyContent: 'flex-start', background: 'var(--color-bg-base)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)' }}
                   onClick={(e) => { e.stopPropagation(); onSelectTab("ajustes"); setIsProfileMenuOpen(false); }}
                 >
-                  <Icons.Settings /> Ajustes
+                  <Icons.Settings /> {t('nav.settings')}
                 </button>
               </div>
             </div>
