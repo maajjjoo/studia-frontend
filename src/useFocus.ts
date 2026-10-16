@@ -218,7 +218,11 @@ export function useFocus() {
     });
 
     try {
-      new Notification("Studia", { body: mode === 'focus' ? "¡Sesión de enfoque completada!" : "Descanso terminado." });
+      const isEnglish = typeof window !== 'undefined' && localStorage.getItem('studia_language') === 'en';
+      const notificationBody = isEnglish
+        ? (mode === 'focus' ? 'Focus session completed!' : 'Break finished.')
+        : (mode === 'focus' ? '¡Sesión de enfoque completada!' : 'Descanso terminado.');
+      new Notification("Studia", { body: notificationBody });
     } catch (e) {}
   }, [clearTimer, addCompletedSession, mode, stopBackendAppMonitoring, stopBackendWebsiteBlocking, enqueueBackendOp]);
 
@@ -323,6 +327,8 @@ export function useFocus() {
 
           const errMsg = String(err);
 
+          const isEnglish = typeof window !== 'undefined' && localStorage.getItem('studia_language') === 'en';
+
           // Desktop application blocking remains active even if website blocking fails
           if (errMsg.includes('UAC_CANCELLED')) {
             setUacPrompt({
@@ -330,7 +336,9 @@ export function useFocus() {
               customAppsToBlock: targetCustomApps,
               websitesToBlock: sites,
               isError: false,
-              errorMessage: 'Has cancelado los permisos de administrador (UAC). Para bloquear sitios web en Windows se requieren permisos elevados.'
+              errorMessage: isEnglish
+                ? 'You cancelled administrator permissions (UAC). Elevated permissions are required to block websites on Windows.'
+                : 'Has cancelado los permisos de administrador (UAC). Para bloquear sitios web en Windows se requieren permisos elevados.'
             });
           } else {
             setWebsiteError(errMsg);
@@ -339,7 +347,9 @@ export function useFocus() {
               customAppsToBlock: targetCustomApps,
               websitesToBlock: sites,
               isError: true,
-              errorMessage: `No se pudo activar el bloqueo de sitios web: ${errMsg}`
+              errorMessage: isEnglish
+                ? `Could not enable website blocking: ${errMsg}`
+                : `No se pudo activar el bloqueo de sitios web: ${errMsg}`
             });
           }
         }
