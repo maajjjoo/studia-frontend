@@ -16,7 +16,7 @@
   cursor: pointer; color: var(--color-text-muted); font-weight: 600; font-size: 0.95rem; border: none; background: transparent; text-align: left;
   transition: var(--transition-smooth);
 }
-.nav-item:hover { background: rgba(0,0,0,0.02); color: var(--color-text-main); }
+.nav-item:hover { background: var(--color-hover-subtle); color: var(--color-text-main); }
 .nav-item.active { background: var(--color-accent-soft); color: var(--color-accent-main); }
 .nav-item svg { width: 18px; height: 18px; stroke-width: 2px; }
 

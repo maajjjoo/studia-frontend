@@ -11,3 +11,15 @@
 .theme-preview { height: 40px; border-radius: 6px; margin-bottom: 0.5rem; display: flex; }
 .tp-a1 { flex: 1; background: #F0EAFD; } .tp-a2 { flex: 1; background: #E6F0E8; }
 .tp-b1 { flex: 1; background: #E1EAF3; } .tp-b2 { flex: 1; background: #E0F2FE; }
+
+.appearance-card {
+  border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem;
+  cursor: pointer; width: 120px; text-align: center; transition: var(--transition-smooth);
+  background: var(--color-surface); color: var(--color-text-main);
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+}
+.appearance-card:hover { border-color: var(--color-text-muted); }
+.appearance-card.active { border-color: var(--color-accent-main); background: var(--color-accent-soft); }
+.appearance-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--color-accent-main); }
+.appearance-icon svg { width: 22px; height: 22px; }
+

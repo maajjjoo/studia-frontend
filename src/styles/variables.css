@@ -10,7 +10,7 @@
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.05);
   --transition-smooth: all 0.2s ease-in-out;
 
-  /* Global Neutrals */
+  /* Global Neutrals (Light Mode Default) */
   --color-bg-base: #F8F9FA;
   --color-surface: #FFFFFF;
   --color-border: #E9ECEF;
@@ -19,6 +19,10 @@
   
   --color-destructive: #E03131;
   --color-destructive-bg: #FFF5F5;
+
+  --color-track-bg: rgba(0, 0, 0, 0.05);
+  --color-modal-overlay: rgba(0, 0, 0, 0.35);
+  --color-hover-subtle: rgba(0, 0, 0, 0.03);
 
   /* Theme A: Muted Rose (Default) */
   --color-accent-soft: #FDF3F5;
@@ -45,7 +49,7 @@
 }
 
 [data-theme="blue"] {
-  /* Theme B: Muted Blue */
+  /* Theme B: Muted Blue (Light) */
   --color-accent-soft: #F3F8FC; 
   --color-accent-main: #7FA3C1;
   --color-accent-hover: #668CAE;
@@ -55,9 +59,90 @@
   --prio-medium-bg: #F3F8FC; --prio-medium-text: #7FA3C1;
 }
 
-/* Base resets */
+/* ==========================================================================
+   Dark Mode System Tokens ([data-color-scheme="dark"])
+   ========================================================================== */
+[data-color-scheme="dark"] {
+  --color-bg-base: #111317;
+  --color-surface: #1A1D24;
+  --color-border: #2E3440;
+  --color-text-main: #F1F3F5;
+  --color-text-muted: #9AA2AB;
+
+  --color-destructive: #FF6B6B;
+  --color-destructive-bg: #3B1C1D;
+
+  --color-track-bg: rgba(255, 255, 255, 0.08);
+  --color-modal-overlay: rgba(0, 0, 0, 0.65);
+  --color-hover-subtle: rgba(255, 255, 255, 0.05);
+
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  /* Card Colors (Dark) */
+  --card-tasks-bg: #1A1D24;
+  --card-calendar-bg: #1A1D24;
+  --card-ai-bg: #1A1D24;
+  --card-focus-bg: #1A1D24;
+  --card-progress-bg: #1A1D24;
+
+  /* Theme A: Muted Rose (Dark Mode) */
+  --color-accent-soft: #2D1F24;
+  --color-accent-main: #E09BA8;
+  --color-accent-hover: #EBB0BC;
+  --color-btn-dark: #C27685;
+
+  /* Badges & Priorities (Dark) */
+  --prio-high-bg: #3B1C1D; --prio-high-text: #FF6B6B;
+  --prio-medium-bg: #2D1F24; --prio-medium-text: #E09BA8;
+  --prio-low-bg: #1A1D24; --prio-low-text: #9AA2AB;
+}
+
+[data-color-scheme="dark"][data-theme="blue"] {
+  /* Theme B: Muted Blue (Dark Mode) */
+  --color-accent-soft: #1B2633;
+  --color-accent-main: #8FB4D4;
+  --color-accent-hover: #A2C3E0;
+  --color-btn-dark: #668CAE;
+
+  /* Badges & Priorities (Dark Blue) */
+  --prio-medium-bg: #1B2633; --prio-medium-text: #8FB4D4;
+}
+
+/* Base resets & Native dark scrollbar */
 body {
   margin: 0; padding: 0; background-color: var(--color-bg-base); color: var(--color-text-main);
   overflow: hidden; user-select: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
-input, textarea, select { font-family: inherit; }
+
+[data-color-scheme="dark"] body {
+  color-scheme: dark;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  color: var(--color-text-main);
+}
+
+select option {
+  background-color: var(--color-surface);
+  color: var(--color-text-main);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
