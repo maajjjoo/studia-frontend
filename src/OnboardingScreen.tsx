@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { StudentProfile } from './types';
 import { Icons } from './Icons';
 import { FIELD_LIMITS, validateProfileInput, validateSubjectName } from './scheduleValidation';
+import { useTranslation } from './i18n/LanguageContext';
 
 interface Props {
   onComplete: (profile: StudentProfile) => void;
 }
 
 export function OnboardingScreen({ onComplete }: Props) {
+  const { t, language } = useTranslation();
   const [step, setStep] = useState(1);
   const [profile, setProfile] = useState<StudentProfile>({
     name: '',
@@ -30,11 +32,11 @@ export function OnboardingScreen({ onComplete }: Props) {
     setError('');
     if (step === 1) {
       if (!profile.name.trim()) {
-        setError('Por favor, ingresa tu nombre.');
+        setError(t('onboarding.nameRequired'));
         return;
       }
       if (profile.name.trim().length > FIELD_LIMITS.userName) {
-        setError(`El nombre no puede superar los ${FIELD_LIMITS.userName} caracteres.`);
+        setError(t('onboarding.nameTooLong', { max: FIELD_LIMITS.userName }));
         return;
       }
     }
@@ -47,7 +49,7 @@ export function OnboardingScreen({ onComplete }: Props) {
   };
 
   const addSubject = () => {
-    const subjErr = validateSubjectName(currentSubject, profile.subjects);
+    const subjErr = validateSubjectName(currentSubject, profile.subjects, language);
     if (subjErr) {
       setError(subjErr);
       return;
@@ -63,7 +65,7 @@ export function OnboardingScreen({ onComplete }: Props) {
   };
 
   const handleFinish = () => {
-    const validationErr = validateProfileInput(profile);
+    const validationErr = validateProfileInput(profile, language);
     if (validationErr) {
       setError(validationErr);
       setStep(1);
@@ -85,8 +87,8 @@ export function OnboardingScreen({ onComplete }: Props) {
           <div style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent-main)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
             <Icons.Logo />
           </div>
-          <h1 style={{ margin: '0 0 0.5rem 0' }}>Configura tu espacio</h1>
-          <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>Paso {step} de 4</p>
+          <h1 style={{ margin: '0 0 0.5rem 0' }}>{t('onboarding.setupTitle')}</h1>
+          <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>{t('onboarding.stepCounter', { step })}</p>
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
             {[1, 2, 3, 4].map(i => (
               <div key={i} style={{ width: '40px', height: '6px', borderRadius: '3px', background: i <= step ? 'var(--color-accent-main)' : 'var(--color-border)' }} />
@@ -98,10 +100,10 @@ export function OnboardingScreen({ onComplete }: Props) {
 
         {step === 1 && (
           <div className="onboarding-step" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <h2>Sobre ti</h2>
+            <h2>{t('onboarding.step1Title')}</h2>
             <div className="form-group">
               <label className="form-label">
-                <span>¿Cómo te llamas? *</span>
+                <span>{t('onboarding.nameLabel')}</span>
                 <span className="char-counter">{profile.name.length}/{FIELD_LIMITS.userName}</span>
               </label>
               <input
@@ -113,13 +115,13 @@ export function OnboardingScreen({ onComplete }: Props) {
                   setProfile({ ...profile, name: e.target.value });
                   if (error) setError('');
                 }}
-                placeholder="Ej. María José"
+                placeholder={t('onboarding.namePlaceholder')}
                 autoFocus
               />
             </div>
             <div className="form-group">
               <label className="form-label">
-                <span>¿Qué estudias?</span>
+                <span>{t('onboarding.programLabel')}</span>
                 <span className="char-counter">{profile.program.length}/{FIELD_LIMITS.programName}</span>
               </label>
               <input
@@ -128,12 +130,12 @@ export function OnboardingScreen({ onComplete }: Props) {
                 maxLength={FIELD_LIMITS.programName}
                 value={profile.program}
                 onChange={e => setProfile({ ...profile, program: e.target.value })}
-                placeholder="Ej. Ingeniería de Software"
+                placeholder={t('onboarding.programPlaceholder')}
               />
             </div>
             <div className="form-group">
               <label className="form-label">
-                <span>Semestre actual</span>
+                <span>{t('onboarding.semesterLabel')}</span>
                 <span className="char-counter">{profile.semester.length}/{FIELD_LIMITS.semesterName}</span>
               </label>
               <input
@@ -142,7 +144,7 @@ export function OnboardingScreen({ onComplete }: Props) {
                 maxLength={FIELD_LIMITS.semesterName}
                 value={profile.semester}
                 onChange={e => setProfile({ ...profile, semester: e.target.value })}
-                placeholder="Ej. 6to Semestre"
+                placeholder={t('onboarding.semesterPlaceholder')}
               />
             </div>
           </div>
@@ -150,8 +152,8 @@ export function OnboardingScreen({ onComplete }: Props) {
 
         {step === 2 && (
           <div className="onboarding-step" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <h2>Tus materias</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>Añade las asignaturas que estás cursando este semestre.</p>
+            <h2>{t('onboarding.step2Title')}</h2>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>{t('onboarding.step2Desc')}</p>
             <div className="form-group" style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem' }}>
               <input
                 type="text"
@@ -164,14 +166,14 @@ export function OnboardingScreen({ onComplete }: Props) {
                   if (error) setError('');
                 }}
                 onKeyDown={e => e.key === 'Enter' && addSubject()}
-                placeholder="Nombre de la materia..."
+                placeholder={t('onboarding.subjectPlaceholder')}
                 autoFocus
               />
-              <button className="btn btn-primary" onClick={addSubject}>Añadir</button>
+              <button className="btn btn-primary" onClick={addSubject}>{t('onboarding.addBtn')}</button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {profile.subjects.length === 0 ? (
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Aún no has añadido materias.</p>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>{t('onboarding.noSubjectsAdded')}</p>
               ) : profile.subjects.map(subj => (
                 <div key={subj} style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent-main)', padding: '0.5rem 1rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
                   {subj}
@@ -184,24 +186,24 @@ export function OnboardingScreen({ onComplete }: Props) {
 
         {step === 3 && (
           <div className="onboarding-step" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <h2>Preferencias de estudio</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>¿Cómo te gusta organizar tu tiempo de concentración?</p>
+            <h2>{t('onboarding.step3Title')}</h2>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>{t('onboarding.step3Desc')}</p>
             <div className="form-group">
-              <label className="form-label">Duración de cada sesión (minutos)</label>
+              <label className="form-label">{t('onboarding.sessionDurationLabel')}</label>
               <select className="form-select" value={profile.studyPreferences.preferredSessionDuration} onChange={e => setProfile({ ...profile, studyPreferences: { ...profile.studyPreferences, preferredSessionDuration: parseInt(e.target.value, 10) } })}>
-                <option value={15}>15 minutos</option>
-                <option value={25}>25 minutos (Pomodoro clásico)</option>
-                <option value={45}>45 minutos</option>
-                <option value={50}>50 minutos</option>
-                <option value={60}>60 minutos</option>
+                <option value={15}>{t('onboarding.opt15')}</option>
+                <option value={25}>{t('onboarding.opt25')}</option>
+                <option value={45}>{t('onboarding.opt45')}</option>
+                <option value={50}>{t('onboarding.opt50')}</option>
+                <option value={60}>{t('onboarding.opt60')}</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Duración del descanso corto (minutos)</label>
+              <label className="form-label">{t('onboarding.breakDurationLabel')}</label>
               <select className="form-select" value={profile.studyPreferences.preferredBreakDuration} onChange={e => setProfile({ ...profile, studyPreferences: { ...profile.studyPreferences, preferredBreakDuration: parseInt(e.target.value, 10) } })}>
-                <option value={5}>5 minutos</option>
-                <option value={10}>10 minutos</option>
-                <option value={15}>15 minutos</option>
+                <option value={5}>{t('onboarding.opt5')}</option>
+                <option value={10}>{t('onboarding.opt10')}</option>
+                <option value={15}>{t('onboarding.opt15')}</option>
               </select>
             </div>
           </div>
@@ -209,13 +211,13 @@ export function OnboardingScreen({ onComplete }: Props) {
 
         {step === 4 && (
           <div className="onboarding-step" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <h2>Todo listo</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>Has configurado tu perfil básico. Podrás añadir tu horario de clases específico y otras disponibilidades directamente desde el módulo "Horario académico".</p>
+            <h2>{t('onboarding.step4Title')}</h2>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>{t('onboarding.step4Desc')}</p>
             <div style={{ background: 'var(--color-bg-base)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', marginTop: '1rem' }}>
               <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'var(--color-text-main)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <li><strong>Estudiante:</strong> {profile.name || 'No especificado'}</li>
-                <li><strong>Materias:</strong> {profile.subjects.length} registradas</li>
-                <li><strong>Enfoque:</strong> {profile.studyPreferences.preferredSessionDuration} min estudio / {profile.studyPreferences.preferredBreakDuration} min descanso</li>
+                <li><strong>{t('onboarding.summaryStudent')}</strong> {profile.name || t('onboarding.unspecified')}</li>
+                <li><strong>{t('onboarding.summarySubjects')}</strong> {t('onboarding.registeredCount', { count: profile.subjects.length })}</li>
+                <li><strong>{t('onboarding.summaryFocus')}</strong> {t('onboarding.summaryFocusDetail', { study: profile.studyPreferences.preferredSessionDuration, break: profile.studyPreferences.preferredBreakDuration })}</li>
               </ul>
             </div>
           </div>
@@ -223,13 +225,13 @@ export function OnboardingScreen({ onComplete }: Props) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3rem' }}>
           {step > 1 ? (
-            <button className="btn btn-secondary" onClick={prevStep}>Atrás</button>
+            <button className="btn btn-secondary" onClick={prevStep}>{t('common.back')}</button>
           ) : <div></div>}
 
           {step < 4 ? (
-            <button className="btn btn-primary" onClick={nextStep} disabled={step === 1 && !profile.name.trim()}>Siguiente <Icons.ChevronRight /></button>
+            <button className="btn btn-primary" onClick={nextStep} disabled={step === 1 && !profile.name.trim()}>{t('common.next')} <Icons.ChevronRight /></button>
           ) : (
-            <button className="btn btn-primary" onClick={handleFinish}>Comenzar <Icons.Check /></button>
+            <button className="btn btn-primary" onClick={handleFinish}>{t('onboarding.finishBtn')} <Icons.Check /></button>
           )}
         </div>
       </div>

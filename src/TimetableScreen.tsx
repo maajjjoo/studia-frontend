@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { StudentProfile, ClassSession } from './types';
 import {
-  DAY_NAMES,
   FIELD_LIMITS,
   validateClassSessionInput,
   validateSubjectName,
 } from './scheduleValidation';
+import { useTranslation } from './i18n/LanguageContext';
 
 interface Props {
   profile: StudentProfile;
@@ -17,6 +17,7 @@ interface Props {
 }
 
 export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteClass, onUpdateProfile }: Props) {
+  const { t, language, formatDay } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<ClassSession | null>(null);
   const [quickSubject, setQuickSubject] = useState('');
@@ -33,7 +34,7 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
   };
 
   const handleQuickAddSubject = () => {
-    const validationErr = validateSubjectName(quickSubject, profile.subjects);
+    const validationErr = validateSubjectName(quickSubject, profile.subjects, language);
     if (validationErr) {
       setQuickSubjectError(validationErr);
       return;
@@ -48,19 +49,19 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
     <div className="main-content">
       <div className="screen-header">
         <div>
-          <h1>Horario Académico</h1>
-          <p>Organiza tus clases semanales y actividades fijas.</p>
+          <h1>{t('timetable.title')}</h1>
+          <p>{t('timetable.subtitle')}</p>
         </div>
         <button className="btn btn-primary" onClick={openNew} disabled={profile.subjects.length === 0}>
-          <Icons.Plus /> Nueva clase
+          <Icons.Plus /> {t('timetable.addClassBtn')}
         </button>
       </div>
 
       {profile.subjects.length === 0 && profile.classTimetable.length === 0 ? (
         <div className="empty-state dash-card" style={{ marginTop: '2rem' }}>
           <Icons.Calendar />
-          <h3>No has registrado materias</h3>
-          <p>Para crear tu horario, primero necesitas registrar tus asignaturas.</p>
+          <h3>{t('timetable.noSubjectsRegistered')}</h3>
+          <p>{t('timetable.noSubjectsDesc')}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '420px', margin: '2rem auto 0' }}>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
@@ -70,7 +71,7 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
                 style={{ flex: 1 }}
                 value={quickSubject}
                 maxLength={FIELD_LIMITS.subjectName}
-                placeholder="Ej. Matemáticas"
+                placeholder={t('settings.addSubjectPlaceholder')}
                 onChange={e => {
                   setQuickSubject(e.target.value);
                   if (quickSubjectError) setQuickSubjectError('');
@@ -83,7 +84,7 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
                 }}
               />
               <button className="btn btn-primary" onClick={handleQuickAddSubject}>
-                Añadir
+                {t('settings.addSubjectBtn')}
               </button>
             </div>
             {quickSubjectError && (
@@ -95,8 +96,8 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
         </div>
       ) : (
         <div className="timetable-grid">
-          {DAY_NAMES.map((dayName, index) => {
-            const dayNum = index + 1;
+          {[1, 2, 3, 4, 5, 6, 7].map(dayNum => {
+            const dayName = formatDay(dayNum, { weekday: 'long' });
             const dayClasses = profile.classTimetable
               .filter(c => c.dayOfWeek === dayNum)
               .sort((a, b) => a.startTime.localeCompare(b.startTime));
@@ -110,7 +111,7 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {dayClasses.length === 0 ? (
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center', margin: '0.5rem 0' }}>Sin clases</p>
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center', margin: '0.5rem 0' }}>{t('timetable.emptyDay')}</p>
                   ) : dayClasses.map(c => (
                     <div
                       key={c.id}
@@ -158,6 +159,7 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
 }
 
 function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile }: any) {
+  const { t, language, formatDay } = useTranslation();
   const [formData, setFormData] = useState<Omit<ClassSession, 'id'>>({
     subject: profile.subjects[0] || '',
     description: '',
@@ -213,7 +215,8 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
     const validationError = validateClassSessionInput(
       sanitizedData,
       profile.classTimetable || [],
-      editingSession?.id
+      editingSession?.id,
+      language
     );
 
     if (validationError) {
@@ -230,7 +233,7 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content timetable-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">{editingSession ? 'Editar clase' : 'Nueva clase'}</h2>
+          <h2 className="modal-title">{editingSession ? t('timetable.modalEditTitle') : t('timetable.modalNewTitle')}</h2>
           <button type="button" className="modal-close" onClick={onClose}>
             <Icons.Close />
           </button>
@@ -240,7 +243,7 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
 
         <form onSubmit={handleSubmit} className="timetable-modal-form" noValidate>
           <div className="form-group">
-            <label className="form-label">Materia *</label>
+            <label className="form-label">{t('timetable.fieldSubject')} *</label>
             <select
               className="form-select"
               value={formData.subject}
@@ -256,23 +259,23 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
           <div className="timetable-schedule-box">
             <div className="timetable-schedule-box-header">
               <Icons.Clock />
-              <span>Horario de la sesión</span>
+              <span>{t('timetable.sessionScheduleBox')}</span>
             </div>
             <div className="timetable-time-grid">
               <div className="form-group">
-                <label className="form-label">Día *</label>
+                <label className="form-label">{t('timetable.dayLabel')} *</label>
                 <select
                   className="form-select"
                   value={formData.dayOfWeek}
                   onChange={e => setFormData({ ...formData, dayOfWeek: parseInt(e.target.value, 10) })}
                 >
-                  {DAY_NAMES.map((d, idx) => (
-                    <option key={d} value={idx + 1}>{d}</option>
+                  {[1, 2, 3, 4, 5, 6, 7].map(dayNum => (
+                    <option key={dayNum} value={dayNum}>{formatDay(dayNum, { weekday: 'long' })}</option>
                   ))}
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Inicio *</label>
+                <label className="form-label">{t('timetable.startLabel')} *</label>
                 <input
                   type="time"
                   className="form-input"
@@ -284,7 +287,7 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Fin *</label>
+                <label className="form-label">{t('timetable.endLabel')} *</label>
                 <input
                   type="time"
                   className="form-input"
@@ -301,7 +304,7 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
           <div className="timetable-details-grid">
             <div className="form-group">
               <label className="form-label">
-                <span>Aula / Ubicación</span>
+                <span>{t('timetable.roomLabel')}</span>
                 <span className="char-counter">{(formData.room || '').length}/{FIELD_LIMITS.classRoom}</span>
               </label>
               <input
@@ -310,13 +313,13 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
                 maxLength={FIELD_LIMITS.classRoom}
                 value={formData.room || ''}
                 onChange={e => setFormData({ ...formData, room: e.target.value })}
-                placeholder="Ej. Aula 102"
+                placeholder={t('timetable.roomPlaceholder')}
               />
             </div>
 
             <div className="form-group">
               <label className="form-label">
-                <span>Profesor</span>
+                <span>{t('timetable.teacherLabel')}</span>
                 <span className="char-counter">{(formData.teacher || '').length}/{FIELD_LIMITS.classTeacher}</span>
               </label>
               <input
@@ -325,14 +328,14 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
                 maxLength={FIELD_LIMITS.classTeacher}
                 value={formData.teacher || ''}
                 onChange={e => setFormData({ ...formData, teacher: e.target.value })}
-                placeholder="Nombre del docente"
+                placeholder={t('timetable.teacherPlaceholder')}
               />
             </div>
           </div>
 
           <div className="form-group">
             <label className="form-label">
-              <span>Descripción (Opcional)</span>
+              <span>{t('timetable.descLabel')}</span>
               <span className="char-counter">{descLength}/{FIELD_LIMITS.classDescription}</span>
             </label>
             <input
@@ -341,7 +344,7 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
               maxLength={FIELD_LIMITS.classDescription}
               value={formData.description || ''}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Ej. Laboratorio práctico"
+              placeholder={t('timetable.descPlaceholder')}
             />
           </div>
 
@@ -353,12 +356,12 @@ function ClassModal({ isOpen, onClose, onSave, onDelete, editingSession, profile
                 style={{ color: 'var(--prio-high-text)' }}
                 onClick={() => onDelete(editingSession.id)}
               >
-                Eliminar
+                {t('common.delete')}
               </button>
             ) : <div />}
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-              <button type="submit" className="btn btn-primary">Guardar</button>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>{t('common.cancel')}</button>
+              <button type="submit" className="btn btn-primary">{t('common.save')}</button>
             </div>
           </div>
         </form>
