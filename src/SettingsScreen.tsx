@@ -2,6 +2,8 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { StudentProfile } from './types';
+import { ThemeMode, ThemeAppearance } from './useTheme';
+import { useTranslation } from './i18n/LanguageContext';
 import {
   DAY_NAMES,
   DURATION_LIMITS,
@@ -11,13 +13,16 @@ import {
 } from './scheduleValidation';
 
 interface Props {
-  theme: string;
-  onChangeTheme: (theme: 'rose' | 'blue') => void;
+  theme: ThemeMode;
+  onChangeTheme: (theme: ThemeMode) => void;
+  appearance: ThemeAppearance;
+  onChangeAppearance: (appearance: ThemeAppearance) => void;
   profile: StudentProfile;
   onUpdateProfile: (profile: StudentProfile) => void;
 }
 
-export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile }: Props) {
+export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppearance, profile, onUpdateProfile }: Props) {
+  const { t, language, setLanguage, formatDay } = useTranslation();
   const [formData, setFormData] = useState<StudentProfile>(profile);
   const [isDirty, setIsDirty] = useState(false);
   const [newSubject, setNewSubject] = useState('');
@@ -81,13 +86,13 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
   const handleAddWebsite = () => {
     const normalized = normalizeDomain(newWebsite);
     if (!normalized) {
-      setWebsiteError('Dominio inválido. Ingresa solo el dominio (ej: x.com, web.whatsapp.com, instagram.com) sin https://, rutas ni comodines.');
+      setWebsiteError(t('settings.invalidDomain'));
       return;
     }
 
     const current = formData.studyPreferences?.restrictedWebsites || [];
     if (current.some(d => d.toLowerCase() === normalized)) {
-      setWebsiteError('El dominio ya está en la lista.');
+      setWebsiteError(t('settings.duplicateDomain'));
       return;
     }
 
@@ -136,7 +141,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
   };
 
   const addSubject = () => {
-    const validationErr = validateSubjectName(newSubject, formData.subjects);
+    const validationErr = validateSubjectName(newSubject, formData.subjects, language);
     if (validationErr) {
       setSubjectError(validationErr);
       return;
@@ -153,7 +158,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
   const handleSave = () => {
     setError('');
-    const profileErr = validateProfileInput(formData);
+    const profileErr = validateProfileInput(formData, language);
     if (profileErr) {
       setError(profileErr);
       return;
@@ -163,7 +168,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
     for (const sub of removedSubjects) {
       const isUsed = formData.classTimetable?.some(c => c.subject === sub);
       if (isUsed) {
-        setError(`No puedes eliminar la materia "${sub}" porque está asignada a una clase en el horario.`);
+        setError(t('settings.cannotRemoveSubjectAssigned', { subject: sub }));
         return;
       }
     }
@@ -218,20 +223,20 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
     <div className="main-content" style={{paddingBottom: '4rem', display: 'flex', flexDirection: 'column'}}>
       <div className="screen-header" style={{borderBottom: 'none', paddingBottom: 0, marginBottom: '2rem'}}>
         <div>
-          <h1 style={{margin: '0 0 0.5rem 0'}}>Ajustes</h1>
-          <p style={{color: 'var(--color-text-muted)', margin: 0}}>Administra tus preferencias y personaliza tu espacio de Studia.</p>
+          <h1 style={{margin: '0 0 0.5rem 0'}}>{t('settings.title')}</h1>
+          <p style={{color: 'var(--color-text-muted)', margin: 0}}>{t('settings.subtitle')}</p>
         </div>
         {isDirty && (
           <div style={{display: 'flex', gap: '1rem'}}>
-            <button className="btn btn-secondary" onClick={() => { setFormData(profile); setIsDirty(false); }}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleSave}>Guardar cambios</button>
+            <button className="btn btn-secondary" onClick={() => { setFormData(profile); setIsDirty(false); }}>{t('common.cancel')}</button>
+            <button className="btn btn-primary" onClick={handleSave}>{t('settings.saveChanges')}</button>
           </div>
         )}
       </div>
 
       {error && (
         <div style={{background: 'var(--color-destructive)', color: '#fff', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '2rem'}}>
-          <strong>Error de validación:</strong> {error}
+          <strong>{t('settings.validationErrorPrefix')}</strong> {error}
         </div>
       )}
 
@@ -239,17 +244,17 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
         {/* Left Navigation */}
         <div style={{width: '240px', display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
           <button className={`nav-item ${activeTab === 'general' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('general')}>
-            <Icons.Settings /> General
+            <Icons.Settings /> {t('settings.tabGeneral')}
           </button>
           <button className={`nav-item ${activeTab === 'apariencia' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('apariencia')}>
-            <Icons.Database /> Apariencia
+            <Icons.Database /> {t('settings.tabAppearance')}
           </button>
           <button className={`nav-item ${activeTab === 'academico' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('academico')}>
-            <Icons.Book /> Académico
-            </button>
-            <button className={`nav-item ${activeTab === 'enfoque' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('enfoque')}>
-              <Icons.Shield /> Modo Enfoque
-            </button>
+            <Icons.Book /> {t('settings.tabAcademic')}
+          </button>
+          <button className={`nav-item ${activeTab === 'enfoque' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('enfoque')}>
+            <Icons.Shield /> {t('settings.tabFocus')}
+          </button>
         </div>
 
         {/* Right Content */}
@@ -259,33 +264,64 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
             <>
               {/* Account Section */}
               <div>
-                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Cuenta</h4>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.accountSection')}</h4>
                 <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
                     <div>
-                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Nombre de usuario</div>
-                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tu identidad visible en Studia.</div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>{t('settings.fieldUsername')}</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{t('settings.fieldUsernameDesc')}</div>
                     </div>
                     <input type="text" className="form-input" style={{width: '250px'}} maxLength={FIELD_LIMITS.userName} value={formData.name} onChange={e => handleChange('name', e.target.value)} />
                   </div>
 
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
                     <div>
-                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Programa académico</div>
-                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>La carrera o grado que estudias.</div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>{t('settings.fieldProgram')}</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{t('settings.fieldProgramDesc')}</div>
                     </div>
                     <input type="text" className="form-input" style={{width: '250px'}} maxLength={FIELD_LIMITS.programName} value={formData.program} onChange={e => handleChange('program', e.target.value)} />
                   </div>
 
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                     <div>
-                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Semestre actual</div>
-                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tu nivel de progreso actual.</div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>{t('settings.fieldSemester')}</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{t('settings.fieldSemesterDesc')}</div>
                     </div>
                     <input type="text" className="form-input" style={{width: '250px'}} maxLength={FIELD_LIMITS.semesterName} value={formData.semester} onChange={e => handleChange('semester', e.target.value)} />
                   </div>
 
+                </div>
+              </div>
+
+              {/* Language Section */}
+              <div>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.languageSection')}</h4>
+                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>{t('settings.languageTitle')}</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{t('settings.languageDesc')}</div>
+                    </div>
+                    <div style={{display: 'flex', gap: '1rem'}}>
+                      <div
+                        className={`appearance-card ${language === 'es' ? 'active' : ''}`}
+                        onClick={() => setLanguage('es')}
+                        title="Español"
+                      >
+                        <div className="appearance-icon" style={{fontSize: '1rem', fontWeight: 700}}>ES</div>
+                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>{t('settings.langEs')}</span>
+                      </div>
+                      <div
+                        className={`appearance-card ${language === 'en' ? 'active' : ''}`}
+                        onClick={() => setLanguage('en')}
+                        title="English"
+                      >
+                        <div className="appearance-icon" style={{fontSize: '1rem', fontWeight: 700}}>EN</div>
+                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>{t('settings.langEn')}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
@@ -293,25 +329,49 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
           {activeTab === 'apariencia' && (
             <>
-              {/* Theme Section */}
+              {/* Theme & Appearance Section */}
               <div>
-                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Tema y Estilo</h4>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.tabAppearance')}</h4>
                 <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
+                  {/* Modo de interfaz */}
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
+                    <div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>{t('theme.modeTitle')}</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{t('theme.modeSubtitle')}</div>
+                    </div>
+                    
+                    <div style={{display: 'flex', gap: '1rem'}}>
+                      <div className={`appearance-card ${appearance === 'light' ? 'active' : ''}`} onClick={() => onChangeAppearance('light')}>
+                        <div className="appearance-icon"><Icons.Sun /></div>
+                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>{t('theme.light')}</span>
+                      </div>
+                      <div className={`appearance-card ${appearance === 'dark' ? 'active' : ''}`} onClick={() => onChangeAppearance('dark')}>
+                        <div className="appearance-icon"><Icons.Moon /></div>
+                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>{t('theme.dark')}</span>
+                      </div>
+                      <div className={`appearance-card ${appearance === 'system' ? 'active' : ''}`} onClick={() => onChangeAppearance('system')}>
+                        <div className="appearance-icon"><Icons.Monitor /></div>
+                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>{t('theme.system')}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Paleta de colores */}
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                     <div>
-                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Paleta de colores</div>
-                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Selecciona el acento principal de la interfaz.</div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>{t('theme.paletteTitle')}</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{t('theme.paletteSubtitle')}</div>
                     </div>
                     
                     <div style={{display: 'flex', gap: '1rem'}}>
                       <div className={`theme-card ${theme === 'rose' ? 'active' : ''}`} style={{width: '120px'}} onClick={() => onChangeTheme('rose')}>
                         <div className="theme-preview" style={{background: '#FDF3F5'}}><div className="tp-a1" style={{background: '#D48E9B'}}></div><div className="tp-a2" style={{background: '#F8F9FA'}}></div></div>
-                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>Rosa</span>
+                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>{t('theme.rose')}</span>
                       </div>
                       <div className={`theme-card ${theme === 'blue' ? 'active' : ''}`} style={{width: '120px'}} onClick={() => onChangeTheme('blue')}>
                         <div className="theme-preview" style={{background: '#F3F8FC'}}><div className="tp-b1" style={{background: '#7FA3C1'}}></div><div className="tp-b2" style={{background: '#F8F9FA'}}></div></div>
-                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>Azul</span>
+                        <span style={{fontWeight: 600, fontSize: '0.85rem'}}>{t('theme.blue')}</span>
                       </div>
                     </div>
                   </div>
@@ -321,13 +381,13 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
               {/* Preferences Section */}
               <div>
-                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Preferencias de Enfoque</h4>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.focusPrefsSection')}</h4>
                 <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
                     <div>
-                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Duración Pomodoro (min)</div>
-                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Tiempo para cada bloque de enfoque ({DURATION_LIMITS.focusMinMinutes}–{DURATION_LIMITS.focusMaxMinutes} min).</div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>{t('settings.pomodoroDuration')}</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{t('settings.pomodoroDurationDesc', { min: DURATION_LIMITS.focusMinMinutes, max: DURATION_LIMITS.focusMaxMinutes })}</div>
                     </div>
                     <input
                       type="number"
@@ -343,8 +403,8 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                     <div>
-                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>Descanso corto (min)</div>
-                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>Pausa entre sesiones de estudio ({DURATION_LIMITS.breakMinMinutes}–{DURATION_LIMITS.breakMaxMinutes} min).</div>
+                      <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>{t('settings.shortBreakDuration')}</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{t('settings.shortBreakDurationDesc', { min: DURATION_LIMITS.breakMinMinutes, max: DURATION_LIMITS.breakMaxMinutes })}</div>
                     </div>
                     <input
                       type="number"
@@ -367,7 +427,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
             <>
               {/* Materias Section */}
               <div>
-                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Materias Inscritas</h4>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.subjectsSection')}</h4>
                 <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
                   <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
@@ -382,10 +442,10 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                           setNewSubject(e.target.value);
                           if (subjectError) setSubjectError('');
                         }}
-                        placeholder="Ej. Álgebra Lineal"
+                        placeholder={t('settings.addSubjectPlaceholder')}
                         onKeyDown={e => e.key === 'Enter' && addSubject()}
                       />
-                      <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={addSubject}><Icons.Plus /> Añadir</button>
+                      <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={addSubject}><Icons.Plus /> {t('settings.addSubjectBtn')}</button>
                     </div>
                     {subjectError && <div style={{color: 'var(--color-destructive)', fontSize: '0.8rem'}}>{subjectError}</div>}
                   </div>
@@ -396,7 +456,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                         <button style={{background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--color-text-muted)'}} onClick={() => removeSubject(s)}><Icons.Close /></button>
                       </span>
                     ))}
-                    {formData.subjects.length === 0 && <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>No hay materias registradas.</span>}
+                    {formData.subjects.length === 0 && <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{t('settings.noSubjects')}</span>}
                   </div>
 
                 </div>
@@ -404,14 +464,14 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
               {/* Disponibilidad Section */}
               <div>
-                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Disponibilidad de Estudio</h4>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.availabilitySection')}</h4>
                 <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
                   <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
                     {(formData.studyAvailability || []).map((avail, i) => (
                       <div key={i} style={{display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'var(--color-bg-base)', padding: '0.5rem', borderRadius: 'var(--radius-sm)'}}>
                         <select className="form-select" style={{flex: 1, padding: '0.4rem'}} value={avail.dayOfWeek} onChange={e => updateAvailability(i, 'dayOfWeek', e.target.value)}>
-                          {days.map((d, idx) => <option key={d} value={idx + 1}>{d}</option>)}
+                          {days.map((_, idx) => <option key={idx + 1} value={idx + 1}>{formatDay(idx + 1, { weekday: 'long' })}</option>)}
                         </select>
                         <input type="time" min="00:00" max="23:59" className="form-input" style={{width: '105px', padding: '0.4rem'}} value={avail.startTime} onChange={e => updateAvailability(i, 'startTime', e.target.value)} />
                         <span style={{color: 'var(--color-text-muted)'}}>-</span>
@@ -422,12 +482,12 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                     
                     <div style={{marginTop: '0.5rem', display: 'flex', gap: '0.5rem'}}>
                       <select id="new-avail-day" className="form-select" style={{flex: 1}}>
-                        {days.map((d, idx) => <option key={d} value={idx + 1}>{d}</option>)}
+                        {days.map((_, idx) => <option key={idx + 1} value={idx + 1}>{formatDay(idx + 1, { weekday: 'long' })}</option>)}
                       </select>
                       <button className="btn btn-secondary" style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}} onClick={() => {
                         const day = parseInt((document.getElementById('new-avail-day') as HTMLSelectElement).value, 10);
                         addAvailability(day);
-                      }}><Icons.Plus /> Añadir ventana</button>
+                      }}><Icons.Plus /> {t('settings.addAvailabilityBtn')}</button>
                     </div>
                   </div>
 
@@ -440,26 +500,26 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
           {activeTab === 'enfoque' && (
             <>
               <div>
-                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Bloqueo de Aplicaciones</h4>
+                <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.appBlockingTitle')}</h4>
 
                 <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
 
                   <div style={{background: 'rgba(var(--color-accent-soft-rgb), 0.08)', border: '1px solid rgba(var(--color-accent-soft-rgb), 0.2)', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start'}}>
                     <span style={{color: 'var(--color-accent-soft)', width: '16px', height: '16px', display: 'flex', marginTop: '0.1rem'}}><Icons.Shield /></span>
                     <div>
-                      <div style={{fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-main)', marginBottom: '0.25rem'}}>¿Qué es el Modo Enfoque Estricto?</div>
+                      <div style={{fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-main)', marginBottom: '0.25rem'}}>{t('settings.strictInfoTitle')}</div>
                       <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5'}}>
-                        El modo estricto cerrará automáticamente las aplicaciones seleccionadas si intentas abrirlas durante tu sesión de estudio.
+                        {t('settings.strictInfoNotice')}
                         <br/><br/>
-                        <strong>Advertencia:</strong> Guarda cualquier trabajo pendiente en ellas antes de continuar. Esta función no bloquea sitios web y las aplicaciones podrán reabrirse al finalizar la sesión.
+                        {t('settings.strictInfoWarning')}
                       </div>
                     </div>
                   </div>
 
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
                     <div>
-                      <div style={{fontWeight: 600, color: 'var(--color-text-main)', fontSize: '0.95rem'}}>Activar Modo Estricto</div>
-                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem'}}>Aplicar restricciones automáticamente al iniciar un Pomodoro.</div>
+                      <div style={{fontWeight: 600, color: 'var(--color-text-main)', fontSize: '0.95rem'}}>{t('settings.strictModeTitle')}</div>
+                      <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.25rem'}}>{t('settings.strictModeDesc')}</div>
                     </div>
                     <label className="switch">
                       <input type="checkbox"
@@ -487,7 +547,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
                       {/* Apps Column */}
                       <div style={{flex: '1 1 300px'}}>
-                        <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>Aplicaciones Soportadas</h5>
+                        <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.supportedAppsTitle')}</h5>
                         <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
                           {[
                             { id: 'discord.exe', name: 'Discord' },
@@ -533,7 +593,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                         </div>
 
                         <div style={{marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                          <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: 0}}>Aplicaciones Personalizadas</h5>
+                          <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: 0}}>{t('settings.customAppsTitle')}</h5>
                           <button
                             className="btn btn-secondary"
                             style={{padding: '0.25rem 0.5rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem'}}
@@ -565,7 +625,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                               }
                             }}
                           >
-                            <Icons.Plus /> Agregar aplicación
+                            <Icons.Plus /> {t('settings.addCustomAppBtn')}
                           </button>
                         </div>
 
@@ -579,7 +639,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                                   <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px'}} title={appPath}>{appPath}</span>
                                 </div>
                                 <button
-                                  title="Eliminar aplicación"
+                                  title={t('settings.deleteAppTitle')}
                                   style={{
                                     background: 'none',
                                     border: 'none',
@@ -624,7 +684,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                             );
                           })}
                           {(formData.studyPreferences?.customRestrictedApps || []).length === 0 && (
-                            <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '0.5rem 0'}}>No has agregado aplicaciones personalizadas.</div>
+                            <div style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '0.5rem 0'}}>{t('settings.noCustomApps')}</div>
                           )}
                         </div>
                       </div>
@@ -632,9 +692,9 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
 
                       {/* Websites Column */}
                       <div style={{flex: '1 1 300px'}}>
-                        <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 0.25rem 0'}}>Sitios Web</h5>
+                        <h5 style={{fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 0.25rem 0'}}>{t('settings.websitesTitle')}</h5>
                         <div style={{fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1rem', lineHeight: '1.4'}}>
-                          Los dominios configurados se bloquearán en el archivo <code>hosts</code> de Windows durante el Modo Enfoque (requiere permisos UAC). Nota: el navegador puede reutilizar conexiones o caché de pestañas que ya estaban abiertas antes de iniciar la sesión; cierra las pestañas abiertas del sitio o prueba en una ventana nueva/incógnito.
+                          {t('settings.websitesNotice')}
                         </div>
 
                         <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
@@ -647,7 +707,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                                 maxLength={FIELD_LIMITS.domainName}
                                 value={newWebsite}
                                 onChange={e => setNewWebsite(e.target.value)}
-                                placeholder="Ej. instagram.com"
+                                placeholder={t('settings.addWebsitePlaceholder')}
                                 onKeyDown={e => e.key === 'Enter' && handleAddWebsite()}
                                 disabled={!(formData.studyPreferences?.strictFocusMode)}
                               />
@@ -657,7 +717,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                                 onClick={handleAddWebsite}
                                 disabled={!(formData.studyPreferences?.strictFocusMode) || !newWebsite.trim()}
                               >
-                                <Icons.Plus /> Añadir
+                                <Icons.Plus /> {t('settings.addWebsiteBtn')}
                               </button>
                             </div>
                             {websiteError && <div style={{color: 'var(--color-destructive)', fontSize: '0.8rem'}}>{websiteError}</div>}
@@ -677,7 +737,7 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
                               </span>
                             ))}
                             {(formData.studyPreferences?.restrictedWebsites || []).length === 0 && (
-                              <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic'}}>No hay sitios web restringidos.</span>
+                              <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic'}}>{t('settings.noWebsites')}</span>
                             )}
                           </div>
                         </div>
@@ -697,16 +757,16 @@ export function SettingsScreen({ theme, onChangeTheme, profile, onUpdateProfile 
       {showConfirm && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2 style={{marginTop: 0}}>Confirmar cambios académicos</h2>
-            <p>Estás a punto de guardar cambios en tu perfil, materias o disponibilidad. Ten en cuenta lo siguiente:</p>
+            <h2 style={{marginTop: 0}}>{t('settings.confirmAcademicTitle')}</h2>
+            <p>{t('settings.confirmAcademicDesc')}</p>
             <ul style={{color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: '1.6'}}>
-              <li>Tus clases recurrentes en el <strong>Horario</strong> no se eliminarán ni moverán automáticamente. Si eliminaste una materia, deberás editar las clases manualmente.</li>
-              <li>Tus <strong>bloques de estudio</strong> generados previamente en el Calendario se conservarán intactos.</li>
-              <li>Para que el Planificador use tu nueva disponibilidad, deberás generar una nueva propuesta.</li>
+              <li>{t('settings.confirmAcademicItem1')}</li>
+              <li>{t('settings.confirmAcademicItem2')}</li>
+              <li>{t('settings.confirmAcademicItem3')}</li>
             </ul>
             <div className="modal-actions" style={{marginTop: '2rem'}}>
-              <button className="btn btn-secondary" onClick={() => setShowConfirm(false)}>Cancelar</button>
-              <button className="btn btn-primary" onClick={confirmSave}>Entendido, Guardar</button>
+              <button className="btn btn-secondary" onClick={() => setShowConfirm(false)}>{t('common.cancel')}</button>
+              <button className="btn btn-primary" onClick={confirmSave}>{t('settings.confirmSaveBtn')}</button>
             </div>
           </div>
         </div>
