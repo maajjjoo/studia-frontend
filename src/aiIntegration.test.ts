@@ -8,6 +8,7 @@ import {
 } from './config/apiConfig.ts';
 import type { Activity, FocusSession, StudentProfile, Task } from './types.ts';
 import {
+  ENGLISH_AI_DIRECTIVE,
   buildChatRequestPayload,
   createTypedAiError,
   mapAiErrorToUserMessage,
@@ -317,6 +318,107 @@ export function runAiIntegrationTests(): number {
     assert(
       emptyMsg.includes('vacía'),
       'Empty response must be clearly reported in Spanish'
+    );
+    passed++;
+  }
+
+  // 5. English language AI directive, idempotency, localized context & error mapping
+  {
+    const payloadEn = buildChatRequestPayload(
+      [{ id: '1', role: 'user', content: 'What classes do I have today?', timestamp: 1 }],
+      { profile: null, tasks: [], activities: [], focusSessions: [] },
+      'en'
+    );
+    assert(
+      payloadEn.messages[0].content.startsWith(ENGLISH_AI_DIRECTIVE),
+      'English payload should prepend ENGLISH_AI_DIRECTIVE to user message'
+    );
+    assert(
+      payloadEn.messages[0].content.includes('What classes do I have today?'),
+      'English payload should keep original message content'
+    );
+
+    // Idempotency: re-running on a message that already has the directive should not duplicate it
+    const idempotentPayload = buildChatRequestPayload(
+      [{ id: '1', role: 'user', content: `${ENGLISH_AI_DIRECTIVE}What classes do I have today?`, timestamp: 1 }],
+      { profile: null, tasks: [], activities: [], focusSessions: [] },
+      'en'
+    );
+    const directiveOccurrences = (
+      idempotentPayload.messages[0].content.match(/Studia AI - Student UI Language/g) || []
+    ).length;
+    assert(
+      directiveOccurrences === 1,
+      'English directive must not be duplicated if already present in message'
+    );
+
+    // Snapshot localized day names
+    const sampleProfile: StudentProfile = {
+      name: 'Estudiante',
+      program: 'Sistemas',
+      semester: '1',
+      subjects: ['Matemáticas'],
+      classTimetable: [
+        { id: '1', subject: 'Matemáticas', dayOfWeek: 1, startTime: '08:00', endTime: '10:00' },
+      ],
+      unavailableBlocks: [],
+      studyPreferences: {
+        preferredSessionDuration: 25,
+        preferredBreakDuration: 5,
+        strictFocusMode: false,
+        restrictedApps: [],
+        customRestrictedApps: [],
+        restrictedWebsites: [],
+      },
+      studyAvailability: [{ dayOfWeek: 2, startTime: '14:00', endTime: '16:00' }],
+    };
+
+    const enSnapshot = buildAcademicContextSnapshot({ profile: sampleProfile }, new Date(), 'en');
+    assert(
+      enSnapshot.classSchedule[0].dayName === 'Monday',
+      'English snapshot should use English day name for class schedule'
+    );
+    assert(
+      enSnapshot.studyAvailability[0].dayName === 'Tuesday',
+      'English snapshot should use English day name for study availability'
+    );
+
+    const esSnapshot = buildAcademicContextSnapshot({ profile: sampleProfile }, new Date(), 'es');
+    assert(
+      esSnapshot.classSchedule[0].dayName === 'Lunes',
+      'Spanish snapshot should use Spanish day name for class schedule'
+    );
+    assert(
+      esSnapshot.studyAvailability[0].dayName === 'Martes',
+      'Spanish snapshot should use Spanish day name for study availability'
+    );
+
+    const payloadEs = buildChatRequestPayload(
+      [{ id: '1', role: 'user', content: '¿Qué clases tengo hoy?', timestamp: 1 }],
+      { profile: null, tasks: [], activities: [], focusSessions: [] },
+      'es'
+    );
+    assert(
+      !payloadEs.messages[0].content.includes(ENGLISH_AI_DIRECTIVE),
+      'Spanish payload should NOT prepend English directive'
+    );
+
+    const timeoutEn = mapAiErrorToUserMessage(createTypedAiError('TIMEOUT', 'Timeout'), 'en');
+    assert(
+      timeoutEn.includes('too long') && timeoutEn.includes('again'),
+      'Timeout error in English should be clear'
+    );
+
+    const netEn = mapAiErrorToUserMessage(createTypedAiError('NETWORK_ERROR', 'Network error'), 'en');
+    assert(
+      netEn.includes('connect') && netEn.includes('server'),
+      'Network error in English should be clear'
+    );
+
+    const rateEn = mapAiErrorToUserMessage(createTypedAiError('RATE_LIMITED', '429'), 'en');
+    assert(
+      rateEn.includes('limit reached'),
+      'Rate limit error in English should be clear'
     );
     passed++;
   }

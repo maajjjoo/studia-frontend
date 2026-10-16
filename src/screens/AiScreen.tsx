@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { Icons } from "../Icons";
 import { AiMessage } from "../types";
 import { AI_CONTEXT_CAPS } from "../utils/aiContextBuilder";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
+  const { t, language } = useTranslation();
   const [input, setInput] = useState("");
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
@@ -22,7 +24,7 @@ export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
     if (e) e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || ai.isLoading) return;
-    ai.sendMessage(input, currentContext);
+    ai.sendMessage(input, currentContext, language);
     if (trimmed.length <= AI_CONTEXT_CAPS.maxMessageLength) {
       setInput("");
     }
@@ -36,22 +38,22 @@ export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
   };
 
   const suggestedPrompts = [
-    "Organizar mi semana de estudio.",
-    "Dividir una tarea en pasos pequeños.",
-    "Crear un plan para preparar un examen.",
-    "Analizar mi carga académica de esta semana."
+    t('ai.promptOrganizeWeek'),
+    t('ai.promptSplitTask'),
+    t('ai.promptExamPlan'),
+    t('ai.promptAnalyzeWorkload')
   ];
 
-  const firstName = profile?.name ? profile.name.split(' ')[0] : 'Estudiante';
+  const firstName = profile?.name ? profile.name.split(' ')[0] : t('nav.studentRole');
 
   return (
     <div className="main-content" style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: '2.5rem 3.5rem 1.5rem 3.5rem' }}>
       <div className="screen-header" style={{ marginBottom: '1rem' }}>
         <div>
-          <h1>Tu asistente IA</h1>
-          <p>Consulta, planifica y optimiza tu estudio.</p>
+          <h1>{t('ai.screenTitle')}</h1>
+          <p>{t('ai.screenSubtitle')}</p>
         </div>
-        <button className="btn btn-secondary" onClick={ai.clearHistory} disabled={ai.isLoading}>Nueva conversación</button>
+        <button className="btn btn-secondary" onClick={ai.clearHistory} disabled={ai.isLoading}>{t('ai.newChatBtn')}</button>
       </div>
 
       <div className="ai-chat-container">
@@ -61,8 +63,8 @@ export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
               <div style={{ background: 'var(--card-ai-bg)', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', color: 'var(--color-accent-main)' }}>
                 <Icons.Spark />
               </div>
-              <h3 style={{ fontSize: '1.5rem' }}>¿En qué te puedo ayudar hoy, {firstName}?</h3>
-              <p>Puedes pedirme que estructure tus tareas, planifique tu semana o analice tu horario y disponibilidad.</p>
+              <h3 style={{ fontSize: '1.5rem' }}>{t('ai.greetingUser', { name: firstName })}</h3>
+              <p>{t('ai.emptyStateDesc')}</p>
               <div className="ai-suggested-grid">
                 {suggestedPrompts.map(p => (
                   <button
@@ -70,7 +72,7 @@ export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
                     className="ai-suggested-btn"
                     disabled={ai.isLoading}
                     onClick={() => {
-                      ai.sendMessage(p, currentContext);
+                      ai.sendMessage(p, currentContext, language);
                     }}
                   >
                     {p}
@@ -89,7 +91,7 @@ export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
           ))}
           {ai.isLoading && (
             <div className="ai-message-row assistant">
-              <div className="ai-message-bubble assistant loading">Escribiendo...</div>
+              <div className="ai-message-bubble assistant loading">{t('ai.typing')}</div>
             </div>
           )}
           <div ref={endOfMessagesRef} />
@@ -112,9 +114,9 @@ export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
                 type="button"
                 className="btn btn-secondary"
                 style={{ padding: '0.3rem 0.75rem', fontSize: '0.8rem', flexShrink: 0 }}
-                onClick={() => ai.retryLastMessage(currentContext)}
+                onClick={() => ai.retryLastMessage(currentContext, language)}
               >
-                Reintentar
+                {t('ai.retryBtn')}
               </button>
             )}
           </div>
@@ -123,7 +125,7 @@ export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
         <div className="ai-input-area">
           <textarea
             className="ai-textarea"
-            placeholder="Escribe tu pregunta... (Shift + Enter para nueva línea)"
+            placeholder={t('ai.inputPlaceholder')}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}

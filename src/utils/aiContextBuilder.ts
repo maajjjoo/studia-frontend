@@ -1,4 +1,4 @@
-import { DAY_NAMES } from '../scheduleValidation.ts';
+import { DAY_NAMES, DAY_NAMES_EN } from '../scheduleValidation.ts';
 import type { Activity, FocusSession, StudentProfile, Task } from '../types.ts';
 import { getWeeklyFocusData } from './studyHelpers.ts';
 
@@ -80,7 +80,8 @@ export function buildAcademicContextSnapshot(
     activities?: Activity[];
     focusSessions?: FocusSession[];
   },
-  now: Date = new Date()
+  now: Date = new Date(),
+  language: 'es' | 'en' = 'es'
 ): AcademicContextSnapshot {
   const currentDate = formatLocalDate(now);
   const futureLimitDateObj = new Date(now);
@@ -92,6 +93,9 @@ export function buildAcademicContextSnapshot(
   const activities = Array.isArray(input.activities) ? input.activities : [];
   const focusSessions = Array.isArray(input.focusSessions) ? input.focusSessions : [];
 
+  const dayNamesList = language === 'en' ? DAY_NAMES_EN : DAY_NAMES;
+  const defaultDay = language === 'en' ? 'Monday' : 'Lunes';
+
   const subjects = (profile?.subjects || [])
     .map(s => (s || '').trim())
     .filter(Boolean)
@@ -101,7 +105,7 @@ export function buildAcademicContextSnapshot(
     .slice(0, AI_CONTEXT_CAPS.maxClassSchedule)
     .map(cls => ({
       subject: (cls.subject || '').trim().slice(0, 80),
-      dayName: DAY_NAMES[(cls.dayOfWeek || 1) - 1] || 'Lunes',
+      dayName: dayNamesList[(cls.dayOfWeek || 1) - 1] || defaultDay,
       startTime: cls.startTime,
       endTime: cls.endTime,
       ...(cls.room && cls.room.trim() ? { room: cls.room.trim().slice(0, 60) } : {}),
@@ -111,7 +115,7 @@ export function buildAcademicContextSnapshot(
   const studyAvailability = (profile?.studyAvailability || [])
     .slice(0, AI_CONTEXT_CAPS.maxAvailability)
     .map(slot => ({
-      dayName: DAY_NAMES[(slot.dayOfWeek || 1) - 1] || 'Lunes',
+      dayName: dayNamesList[(slot.dayOfWeek || 1) - 1] || defaultDay,
       startTime: slot.startTime,
       endTime: slot.endTime,
     }));

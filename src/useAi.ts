@@ -17,7 +17,15 @@ export {
   mapAiErrorToUserMessage,
 };
 
-export function useAi() {
+function getActiveLanguage(): 'es' | 'en' {
+  try {
+    return localStorage.getItem('studia_language') === 'en' ? 'en' : 'es';
+  } catch {
+    return 'es';
+  }
+}
+
+export function useAi(currentLanguage?: 'es' | 'en') {
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +34,13 @@ export function useAi() {
 
   const inFlightRef = useRef(false);
   const lastContextRef = useRef<AiContextData | null>(null);
+
+  const getLang = useCallback((): 'es' | 'en' => {
+    if (currentLanguage === 'en' || currentLanguage === 'es') {
+      return currentLanguage;
+    }
+    return getActiveLanguage();
+  }, [currentLanguage]);
 
   useEffect(() => {
     const saved = localStorage.getItem('studia_ai_v1');
@@ -58,15 +73,20 @@ export function useAi() {
   }, [saveMessages]);
 
   const executeConversationTurn = useCallback(
-    async (conversationHistory: AiMessage[], context: AiContextData) => {
+    async (
+      conversationHistory: AiMessage[],
+      context: AiContextData,
+      overrideLang?: 'es' | 'en'
+    ) => {
       inFlightRef.current = true;
       setIsLoading(true);
       setError(null);
       setCanRetry(false);
       lastContextRef.current = context;
+      const lang = overrideLang || getLang();
 
       try {
-        const responseContent = await invokeAiAssistant(conversationHistory, context);
+        const responseContent = await invokeAiAssistant(conversationHistory, context, lang);
 
         const assistantMessage: AiMessage = {
           id: crypto.randomUUID(),
@@ -77,23 +97,24 @@ export function useAi() {
         saveMessages([...conversationHistory, assistantMessage]);
         setCanRetry(false);
       } catch (err: unknown) {
-        setError(mapAiErrorToUserMessage(err));
+        setError(mapAiErrorToUserMessage(err, lang));
         setCanRetry(true);
       } finally {
         inFlightRef.current = false;
         setIsLoading(false);
       }
     },
-    [saveMessages]
+    [saveMessages, getLang]
   );
 
   const sendMessage = useCallback(
-    async (content: string, context: AiContextData) => {
+    async (content: string, context: AiContextData, overrideLang?: 'es' | 'en') => {
       const trimmed = (content || '').trim();
       if (!trimmed || isLoading || inFlightRef.current) return;
+      const lang = overrideLang || getLang();
 
       if (trimmed.length > AI_CONTEXT_CAPS.maxMessageLength) {
-        setError(formatMessageTooLongError(trimmed.length));
+        setError(formatMessageTooLongError(trimmed.length, lang));
         setCanRetry(false);
         return;
       }
@@ -108,13 +129,13 @@ export function useAi() {
       const updatedMessages = [...messages, userMessage];
       saveMessages(updatedMessages);
 
-      await executeConversationTurn(updatedMessages, context);
+      await executeConversationTurn(updatedMessages, context, lang);
     },
-    [messages, isLoading, saveMessages, executeConversationTurn]
+    [messages, isLoading, saveMessages, executeConversationTurn, getLang]
   );
 
   const retryLastMessage = useCallback(
-    async (fallbackContext?: AiContextData) => {
+    async (fallbackContext?: AiContextData, overrideLang?: 'es' | 'en') => {
       if (isLoading || inFlightRef.current || messages.length === 0) return;
       const lastMsg = messages[messages.length - 1];
       if (lastMsg.role !== 'user') return;
@@ -122,9 +143,10 @@ export function useAi() {
       const ctx = fallbackContext || lastContextRef.current;
       if (!ctx) return;
 
-      await executeConversationTurn(messages, ctx);
+      const lang = overrideLang || getLang();
+      await executeConversationTurn(messages, ctx, lang);
     },
-    [isLoading, messages, executeConversationTurn]
+    [isLoading, messages, executeConversationTurn, getLang]
   );
 
   return {

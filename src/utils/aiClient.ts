@@ -26,14 +26,24 @@ export function createTypedAiError(
   return err;
 }
 
-export function formatMessageTooLongError(actualLength?: number): string {
+export function formatMessageTooLongError(
+  actualLength?: number,
+  language: 'es' | 'en' = 'es'
+): string {
+  if (language === 'en') {
+    if (typeof actualLength === 'number' && actualLength > AI_CONTEXT_CAPS.maxMessageLength) {
+      return `Your message has ${actualLength} characters and exceeds the maximum allowed limit of ${AI_CONTEXT_CAPS.maxMessageLength} characters. Please shorten it and try again.`;
+    }
+    return `Your message exceeds the maximum allowed limit of ${AI_CONTEXT_CAPS.maxMessageLength} characters. Please shorten it and try again.`;
+  }
+
   if (typeof actualLength === 'number' && actualLength > AI_CONTEXT_CAPS.maxMessageLength) {
     return `Tu mensaje tiene ${actualLength} caracteres y supera el límite máximo permitido de ${AI_CONTEXT_CAPS.maxMessageLength} caracteres. Acórtalo un poco e inténtalo de nuevo.`;
   }
   return `Tu mensaje supera el límite máximo permitido de ${AI_CONTEXT_CAPS.maxMessageLength} caracteres. Acórtalo un poco e inténtalo de nuevo.`;
 }
 
-export function mapAiErrorToUserMessage(err: unknown): string {
+export function mapAiErrorToUserMessage(err: unknown, language: 'es' | 'en' = 'es'): string {
   const code =
     err &&
     typeof err === 'object' &&
@@ -49,6 +59,39 @@ export function mapAiErrorToUserMessage(err: unknown): string {
     typeof (err as { message?: unknown }).message === 'string'
       ? (err as { message: string }).message.trim()
       : '';
+
+  if (language === 'en') {
+    switch (code) {
+      case 'BACKEND_NOT_CONFIGURED':
+        return 'The AI server is not yet configured in this version. Configure the backend URL before building the installer.';
+      case 'BACKEND_UNAVAILABLE':
+      case 'NETWORK_ERROR':
+        return 'Could not connect to the Studia AI server. Please check your internet connection or verify the backend server is active.';
+      case 'MISSING_API_KEY':
+        return 'The AI server does not have GEMINI_API_KEY configured yet.';
+      case 'INVALID_API_KEY':
+        return 'The AI server could not authenticate with the provider. Check GEMINI_API_KEY on the backend.';
+      case 'MODEL_UNAVAILABLE':
+        return 'The AI model configured on the server is unavailable at this time. Check GEMINI_MODEL on the backend.';
+      case 'RATE_LIMITED':
+        return 'Temporary query limit reached. Please wait a few seconds and try again.';
+      case 'TIMEOUT':
+        return 'The assistant took too long to respond. Please try again.';
+      case 'EMPTY_RESPONSE':
+        return 'The assistant returned an empty response. Try rephrasing your question.';
+      case 'MESSAGE_TOO_LONG':
+        if (rawMessage.startsWith('Your message has ') || rawMessage.startsWith('Tu mensaje tiene ')) {
+          return rawMessage;
+        }
+        return formatMessageTooLongError(undefined, 'en');
+      case 'BAD_REQUEST':
+        return 'Could not process the format of the sent query.';
+      case 'PROVIDER_ERROR':
+        return 'The AI provider experienced a temporary issue. Please try again in a moment.';
+      default:
+        return 'There was a problem processing your query. Please check your connection and try again.';
+    }
+  }
 
   switch (code) {
     case 'BACKEND_NOT_CONFIGURED':
@@ -72,7 +115,7 @@ export function mapAiErrorToUserMessage(err: unknown): string {
       if (rawMessage.startsWith('Tu mensaje tiene ')) {
         return rawMessage;
       }
-      return formatMessageTooLongError();
+      return formatMessageTooLongError(undefined, 'es');
     case 'BAD_REQUEST':
       return 'No se pudo procesar el formato de la consulta enviada.';
     case 'PROVIDER_ERROR':
@@ -89,7 +132,14 @@ function truncateHistoryMessage(content: string, maxLen: number): string {
   return `${content.slice(0, maxLen - 3).trimEnd()}...`;
 }
 
-export function buildChatRequestPayload(messages: AiMessage[], context: AiContextData) {
+export const ENGLISH_AI_DIRECTIVE =
+  '[Studia AI - Student UI Language: English. Please reply entirely in English.]\n\n';
+
+export function buildChatRequestPayload(
+  messages: AiMessage[],
+  context: AiContextData,
+  language: 'es' | 'en' = 'es'
+) {
   const validMessages = messages
     .filter(
       (m): m is AiMessage & { role: 'user' | 'assistant' } =>
@@ -103,14 +153,17 @@ export function buildChatRequestPayload(messages: AiMessage[], context: AiContex
     .filter(m => m.content.length > 0);
 
   if (validMessages.length === 0) {
-    throw createTypedAiError('BAD_REQUEST', 'El mensaje no puede estar vacío.');
+    throw createTypedAiError(
+      'BAD_REQUEST',
+      language === 'en' ? 'Message cannot be empty.' : 'El mensaje no puede estar vacío.'
+    );
   }
 
   const lastMessage = validMessages[validMessages.length - 1];
   if (lastMessage.content.length > AI_CONTEXT_CAPS.maxMessageLength) {
     throw createTypedAiError(
       'MESSAGE_TOO_LONG',
-      formatMessageTooLongError(lastMessage.content.length)
+      formatMessageTooLongError(lastMessage.content.length, language)
     );
   }
 
@@ -135,8 +188,26 @@ export function buildChatRequestPayload(messages: AiMessage[], context: AiContex
     });
   }
 
-  const conversationMessages = [...boundedHistory, lastMessage];
-  const academicContext = buildAcademicContextSnapshot(context);
+  const rawFinalContent =
+    language === 'en'
+      ? (lastMessage.content.startsWith(ENGLISH_AI_DIRECTIVE)
+          ? lastMessage.content
+          : `${ENGLISH_AI_DIRECTIVE}${lastMessage.content}`)
+      : lastMessage.content;
+
+  const finalMessageContent =
+    rawFinalContent.length > AI_CONTEXT_CAPS.maxMessageLength
+      ? rawFinalContent.slice(0, AI_CONTEXT_CAPS.maxMessageLength)
+      : rawFinalContent;
+
+  const conversationMessages = [
+    ...boundedHistory,
+    {
+      role: lastMessage.role,
+      content: finalMessageContent,
+    },
+  ];
+  const academicContext = buildAcademicContextSnapshot(context, new Date(), language);
 
   return {
     messages: conversationMessages,
@@ -150,11 +221,12 @@ function isTauriRuntime(): boolean {
 
 export async function invokeAiAssistant(
   messages: AiMessage[],
-  context: AiContextData
+  context: AiContextData,
+  language: 'es' | 'en' = 'es'
 ): Promise<string> {
   const backendUrl = resolveBackendBaseUrl();
   console.info(`[Studia AI] Conectando con backend en: ${backendUrl}`);
-  const payload = buildChatRequestPayload(messages, context);
+  const payload = buildChatRequestPayload(messages, context, language);
 
   if (isTauriRuntime()) {
     try {
