@@ -1,10 +1,10 @@
 [package]
-name = "tauri-app"
+name = "studia"
 version = "0.1.0"
-description = "A Tauri App"
+description = "Studia - Tu asistente de estudio"
 authors = ["you"]
 edition = "2021"
-default-run = "tauri-app"
+default-run = "studia"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
