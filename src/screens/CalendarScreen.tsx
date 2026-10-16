@@ -2,8 +2,10 @@ import { useState, useMemo } from "react";
 import { Icons } from "../Icons";
 import { Activity } from "../types";
 import { ActivityModal } from "../components/ActivityModal";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export function CalendarScreen({ activities, onAdd, onUpdate, onDelete }: any) {
+  const { t, language, formatDate } = useTranslation();
   const localTodayStr = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(localTodayStr);
   const [viewMonthDate, setViewMonthDate] = useState(new Date(localTodayStr + 'T12:00:00Z'));
@@ -23,14 +25,36 @@ export function CalendarScreen({ activities, onAdd, onUpdate, onDelete }: any) {
     () => activities.filter((a: Activity) => a.date === selectedDate).sort((a: Activity, b: Activity) => a.startTime.localeCompare(b.startTime)),
     [activities, selectedDate]
   );
-  const monthName = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(viewMonthDate);
+
+  const monthNameRaw = new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'es-ES', { month: 'long', year: 'numeric' }).format(viewMonthDate);
+  const monthName = monthNameRaw.charAt(0).toUpperCase() + monthNameRaw.slice(1);
+
+  const daysLetters = (t('calendar.daysLetters') as unknown as string[]) || ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'class':
+      case 'class_session':
+        return t('calendar.categories.class');
+      case 'study_block':
+        return t('calendar.categories.study_block');
+      case 'exam':
+        return t('calendar.categories.exam');
+      case 'assignment':
+      case 'deadline':
+        return t('calendar.categories.assignment');
+      case 'personal':
+      default:
+        return t('calendar.categories.personal');
+    }
+  };
 
   return (
     <div className="main-content">
       <div className="screen-header">
         <div>
-          <h1>Calendario</h1>
-          <p>Visualiza y planifica tus actividades del mes.</p>
+          <h1>{t('calendar.title')}</h1>
+          <p>{t('calendar.subtitle')}</p>
         </div>
       </div>
 
@@ -39,16 +63,22 @@ export function CalendarScreen({ activities, onAdd, onUpdate, onDelete }: any) {
           <div className="fc-header">
             <h2 className="fc-title">{monthName}</h2>
             <div className="fc-nav">
-              <button className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', marginRight: '0.5rem' }} onClick={() => {
-                setViewMonthDate(new Date(localTodayStr + 'T12:00:00Z'));
-                setSelectedDate(localTodayStr);
-              }}>Hoy</button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', marginRight: '0.5rem' }}
+                onClick={() => {
+                  setViewMonthDate(new Date(localTodayStr + 'T12:00:00Z'));
+                  setSelectedDate(localTodayStr);
+                }}
+              >
+                {t('calendar.todayBtn')}
+              </button>
               <button className="fc-nav-btn" onClick={() => setViewMonthDate(new Date(Date.UTC(year, month - 1, 1)))}><Icons.ChevronLeft /></button>
               <button className="fc-nav-btn" onClick={() => setViewMonthDate(new Date(Date.UTC(year, month + 1, 1)))}><Icons.ChevronRight /></button>
             </div>
           </div>
           <div className="fc-grid">
-            {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(d => <div key={d} className="fc-day-head">{d}</div>)}
+            {daysLetters.map((d, idx) => <div key={`${d}-${idx}`} className="fc-day-head">{d}</div>)}
             {calendarDays.map((d, i) => {
               if (!d) return <div key={i} className="fc-cell empty" />;
               const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -67,22 +97,26 @@ export function CalendarScreen({ activities, onAdd, onUpdate, onDelete }: any) {
 
         <div className="fc-agenda">
           <div className="fc-agenda-header">
-            <h3>{new Date(selectedDate + 'T12:00:00Z').toLocaleDateString('es-ES', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-            <button className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} onClick={() => { setEditingActivity(null); setIsModalOpen(true); }}><Icons.Plus /> Crear</button>
+            <h3>{formatDate(new Date(selectedDate + 'T12:00:00Z'), { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+            <button className="btn btn-primary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} onClick={() => { setEditingActivity(null); setIsModalOpen(true); }}>
+              <Icons.Plus /> {t('calendar.createBtn')}
+            </button>
           </div>
           <div className="fc-agenda-list">
             {dayActivities.length === 0 ? (
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>No hay eventos para este día.</p>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>
+                {t('calendar.noEventsToday')}
+              </p>
             ) : dayActivities.map((act: Activity) => (
               <div key={act.id} className="fc-agenda-item">
                 <span className="fc-agenda-time">{act.startTime}</span>
                 <div className="fc-agenda-info" style={{ flex: 1 }}>
                   <h4>{act.title}</h4>
-                  <p>{act.category === 'class' ? 'Clase' : act.category === 'exam' ? 'Examen' : act.category === 'assignment' ? 'Tarea' : 'Personal'}</p>
+                  <p>{getCategoryLabel(act.category)}</p>
                 </div>
                 <div className="task-actions" style={{ opacity: 1, alignSelf: 'center' }}>
                   <button className="icon-btn" onClick={() => { setEditingActivity(act); setIsModalOpen(true); }}><Icons.Edit /></button>
-                  <button className="icon-btn danger" onClick={() => window.confirm("¿Eliminar actividad?") && onDelete(act.id)}><Icons.Trash /></button>
+                  <button className="icon-btn danger" onClick={() => window.confirm(t('calendar.confirmDelete')) && onDelete(act.id)}><Icons.Trash /></button>
                 </div>
               </div>
             ))}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Icons } from "../Icons";
 import { Activity, ActivityCategory } from "../types";
 import { FIELD_LIMITS, validateActivityInput } from "../scheduleValidation";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export interface ActivityModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ export interface ActivityModalProps {
 }
 
 export function ActivityModal({ isOpen, onClose, onSave, editingActivity, initialDate }: ActivityModalProps) {
+  const { t, language } = useTranslation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
@@ -48,13 +50,16 @@ export function ActivityModal({ isOpen, onClose, onSave, editingActivity, initia
     e.preventDefault();
     setError("");
 
-    const validationError = validateActivityInput({
-      title,
-      description,
-      date,
-      startTime,
-      endTime,
-    });
+    const validationError = validateActivityInput(
+      {
+        title,
+        description,
+        date,
+        startTime,
+        endTime,
+      },
+      language
+    );
 
     if (validationError) {
       setError(validationError);
@@ -76,20 +81,21 @@ export function ActivityModal({ isOpen, onClose, onSave, editingActivity, initia
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">{editingActivity ? "Editar evento" : "Nuevo evento"}</h2>
+          <h2 className="modal-title">{editingActivity ? t('calendar.modalEditTitle') : t('calendar.modalNewTitle')}</h2>
           <button className="modal-close" onClick={onClose}><Icons.Close /></button>
         </div>
         <form onSubmit={handleSubmit} noValidate>
           {error && <div className="error-msg">{error}</div>}
           <div className="form-group">
             <label className="form-label">
-              <span>Título *</span>
+              <span>{t('calendar.fieldTitle')} *</span>
               <span className="char-counter">{title.length}/{FIELD_LIMITS.activityTitle}</span>
             </label>
             <input
               type="text"
               className="form-input"
               maxLength={FIELD_LIMITS.activityTitle}
+              placeholder={t('calendar.fieldTitlePlaceholder')}
               value={title}
               onChange={e => {
                 setTitle(e.target.value);
@@ -101,12 +107,13 @@ export function ActivityModal({ isOpen, onClose, onSave, editingActivity, initia
           </div>
           <div className="form-group">
             <label className="form-label">
-              <span>Descripción</span>
+              <span>{t('calendar.fieldDescription')}</span>
               <span className="char-counter">{description.length}/{FIELD_LIMITS.activityDescription}</span>
             </label>
             <textarea
               className="form-textarea"
               maxLength={FIELD_LIMITS.activityDescription}
+              placeholder={t('calendar.fieldDescriptionPlaceholder')}
               value={description}
               onChange={e => {
                 setDescription(e.target.value);
@@ -115,18 +122,21 @@ export function ActivityModal({ isOpen, onClose, onSave, editingActivity, initia
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Categoría</label>
+            <label className="form-label">{t('calendar.fieldCategory')}</label>
             <select className="form-select" value={category} onChange={e => setCategory(e.target.value as ActivityCategory)}>
-              <option value="class">Clase</option><option value="exam">Examen</option><option value="assignment">Tarea</option><option value="personal">Personal</option>
+              <option value="class">{t('calendar.categories.class')}</option>
+              <option value="exam">{t('calendar.categories.exam')}</option>
+              <option value="assignment">{t('calendar.categories.assignment')}</option>
+              <option value="personal">{t('calendar.categories.personal')}</option>
             </select>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Fecha *</label>
+              <label className="form-label">{t('calendar.fieldDate')} *</label>
               <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} required />
             </div>
             <div className="form-group">
-              <label className="form-label">Inicio *</label>
+              <label className="form-label">{t('calendar.fieldStartTime')} *</label>
               <input
                 type="time"
                 className="form-input"
@@ -141,7 +151,7 @@ export function ActivityModal({ isOpen, onClose, onSave, editingActivity, initia
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Fin *</label>
+              <label className="form-label">{t('calendar.fieldEndTime')} *</label>
               <input
                 type="time"
                 className="form-input"
@@ -157,8 +167,10 @@ export function ActivityModal({ isOpen, onClose, onSave, editingActivity, initia
             </div>
           </div>
           <div className="modal-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn-primary" disabled={!title.trim()}>Guardar</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>{t('common.cancel')}</button>
+            <button type="submit" className="btn btn-primary" disabled={!title.trim()}>
+              {editingActivity ? t('calendar.updateEventBtn') : t('calendar.saveEventBtn')}
+            </button>
           </div>
         </form>
       </div>

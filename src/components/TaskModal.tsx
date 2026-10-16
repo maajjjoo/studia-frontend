@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Icons } from "../Icons";
 import { Task, Priority } from "../types";
 import { DURATION_LIMITS, FIELD_LIMITS, validateTaskInput } from "../scheduleValidation";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export interface TaskModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ export interface TaskModalProps {
 }
 
 export function TaskModal({ isOpen, onClose, onSave, editingTask }: TaskModalProps) {
+  const { t, language } = useTranslation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
@@ -47,7 +49,7 @@ export function TaskModal({ isOpen, onClose, onSave, editingTask }: TaskModalPro
       title,
       description,
       estimatedDuration,
-    });
+    }, language);
 
     if (validationError) {
       setError(validationError);
@@ -70,14 +72,14 @@ export function TaskModal({ isOpen, onClose, onSave, editingTask }: TaskModalPro
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">{editingTask ? "Editar tarea" : "Nueva tarea"}</h2>
+          <h2 className="modal-title">{editingTask ? t('tasks.modalEditTitle') : t('tasks.modalNewTitle')}</h2>
           <button className="modal-close" onClick={onClose}><Icons.Close /></button>
         </div>
         <form onSubmit={handleSubmit} noValidate>
           {error && <div className="error-msg">{error}</div>}
           <div className="form-group">
             <label className="form-label">
-              <span>Título *</span>
+              <span>{t('tasks.fieldTitle')} *</span>
               <span className="char-counter">{title.length}/{FIELD_LIMITS.taskTitle}</span>
             </label>
             <input
@@ -95,7 +97,7 @@ export function TaskModal({ isOpen, onClose, onSave, editingTask }: TaskModalPro
           </div>
           <div className="form-group">
             <label className="form-label">
-              <span>Descripción</span>
+              <span>{t('tasks.fieldDescription')}</span>
               <span className="char-counter">{description.length}/{FIELD_LIMITS.taskDescription}</span>
             </label>
             <textarea
@@ -110,20 +112,22 @@ export function TaskModal({ isOpen, onClose, onSave, editingTask }: TaskModalPro
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Prioridad</label>
+              <label className="form-label">{t('tasks.fieldPriority')}</label>
               <select className="form-select" value={priority} onChange={e => setPriority(e.target.value as Priority)}>
-                <option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option>
+                <option value="low">{t('tasks.priorityLow')}</option>
+                <option value="medium">{t('tasks.priorityMedium')}</option>
+                <option value="high">{t('tasks.priorityHigh')}</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Fecha de entrega</label>
+              <label className="form-label">{t('tasks.fieldDueDate')}</label>
               <input type="date" className="form-input" value={dueDate} onChange={e => setDueDate(e.target.value)} />
             </div>
           </div>
           <div className="form-group">
             <label className="form-label">
-              <span>Duración estimada (minutos)</span>
-              <span className="char-counter">{DURATION_LIMITS.taskMinMinutes}–{DURATION_LIMITS.taskMaxMinutes} min</span>
+              <span>{t('tasks.fieldDuration')}</span>
+              <span className="char-counter">{DURATION_LIMITS.taskMinMinutes}–{DURATION_LIMITS.taskMaxMinutes} {t('common.min')}</span>
             </label>
             <input
               type="number"
@@ -140,8 +144,8 @@ export function TaskModal({ isOpen, onClose, onSave, editingTask }: TaskModalPro
             />
           </div>
           <div className="modal-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn-primary" disabled={!title.trim()}>Guardar</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>{t('common.cancel')}</button>
+            <button type="submit" className="btn btn-primary" disabled={!title.trim()}>{t('common.save')}</button>
           </div>
         </form>
       </div>
