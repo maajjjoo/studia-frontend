@@ -49,7 +49,8 @@ export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
   return (
     <div className="main-content" style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: '2.5rem 3.5rem 1.5rem 3.5rem' }}>
       <div className="screen-header" style={{ marginBottom: '1rem' }}>
-        <div>
+        <div className="screen-title">
+          <span className="screen-icon" aria-hidden="true"><Icons.Spark /></span>
           <h1>{t('ai.screenTitle')}</h1>
           <p>{t('ai.screenSubtitle')}</p>
         </div>
@@ -130,7 +131,13 @@ export function AiScreen({ profile, ai, tasks, activities, focus }: any) {
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={2}
+            maxLength={AI_CONTEXT_CAPS.maxMessageLength}
           />
+          {input.length > AI_CONTEXT_CAPS.maxMessageLength * 0.6 && (
+            <span className={`ai-char-counter ${input.length >= AI_CONTEXT_CAPS.maxMessageLength ? 'is-full' : ''}`}>
+              {input.length}/{AI_CONTEXT_CAPS.maxMessageLength}
+            </span>
+          )}
           <button className="ai-send-btn" onClick={() => handleSend()} disabled={!input.trim() || ai.isLoading}>
             <Icons.Spark />
           </button>

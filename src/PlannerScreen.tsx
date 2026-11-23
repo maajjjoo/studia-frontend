@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { EmptyArt } from "./components/EmptyArt";
 import { Icons } from './Icons';
 import { Task, Activity, StudentProfile } from './types';
 import { generateStudyPlan, PlannerProposal } from './studyPlanner';
@@ -129,15 +130,13 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
     <div className="main-content" style={{paddingBottom: '4rem'}}>
       
       {/* Header */}
-      <div className="screen-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem'}}>
-        <div>
-          <div style={{fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent-main)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem'}}>
-            {t('planner.superTitle')}
-          </div>
-          <h1 style={{fontSize: '2.25rem', fontWeight: 800, margin: '0 0 0.25rem 0', color: 'var(--color-text-main)', letterSpacing: '-0.02em', fontFamily: 'var(--font-family)'}}>
+      <div className="screen-header" style={{marginBottom: '2rem'}}>
+        <div className="screen-title">
+          <span className="screen-icon" aria-hidden="true"><Icons.CalendarClock /></span>
+          <h1>
             {t('planner.title')}
           </h1>
-          <p style={{margin: 0, color: 'var(--color-text-muted)', fontSize: '1rem'}}>
+          <p>
             {t('planner.description')}
           </p>
         </div>
@@ -235,7 +234,7 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
           </div>
         ) : (
           <div className="empty-state" style={{padding: '3rem 1rem'}}>
-            <Icons.CheckSquare />
+            <EmptyArt kind="tasks" />
             <h3 style={{marginBottom: '0.5rem'}}>{t('planner.emptyCaughtUpTitle')}</h3>
             <p>{allPendingTasks.length === 0 ? t('planner.emptyNoTasks') : t('planner.emptyAllScheduled')}</p>
           </div>
@@ -249,7 +248,7 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
         <div style={{flex: 2, display: 'flex', flexDirection: 'column'}}>
           {!hasGenerated ? (
              <div className="empty-state dash-card" style={{height: '100%', minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-               <Icons.Calendar />
+               <EmptyArt kind="planner" />
                <h3 style={{marginBottom: '0.5rem'}}>{t('planner.plannerStandbyTitle')}</h3>
                <p style={{maxWidth: '320px', margin: 0}}>{t('planner.plannerStandbyDesc')}</p>
              </div>
@@ -257,13 +256,13 @@ export function PlannerScreen({ profile, tasks, activities, onSaveBlocks }: Prop
              <div className="empty-state dash-card" style={{height: '100%', minHeight: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem'}}>
                {pendingTasksWithDuration.length === 0 ? (
                  <>
-                   <Icons.CheckSquare />
+                   <EmptyArt kind="tasks" />
                    <h3 style={{marginBottom: '0.5rem'}}>{t('planner.allPlanned')}</h3>
                    <p style={{maxWidth: '320px', margin: 0}}>{t('planner.allPlannedDesc')}</p>
                  </>
                ) : (
                  <>
-                   <Icons.Clock />
+                   <EmptyArt kind="focus" />
                    <h3 style={{marginBottom: '0.5rem'}}>{t('planner.noAvailableSlots')}</h3>
                    <p style={{maxWidth: '340px', margin: 0}}>{t('planner.noAvailableSlotsDesc')}</p>
                  </>

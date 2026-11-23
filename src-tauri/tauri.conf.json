@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "tauri-app",
+        "title": "Studia",
         "width": 800,
         "height": 600,
         "center": true,

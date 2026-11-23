@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { EmptyArt } from "../components/EmptyArt";
 import { Icons } from "../Icons";
 import { Task } from "../types";
 import { TaskModal } from "../components/TaskModal";
@@ -21,7 +22,8 @@ export function TasksScreen({ tasks, onAdd, onUpdate, onDelete, onToggle }: any)
   return (
     <div className="main-content">
       <div className="screen-header">
-        <div>
+        <div className="screen-title">
+          <span className="screen-icon" aria-hidden="true"><Icons.CheckSquare /></span>
           <h1>{t('tasks.title')}</h1>
           <p>{t('tasks.subtitle')}</p>
         </div>
@@ -45,7 +47,7 @@ export function TasksScreen({ tasks, onAdd, onUpdate, onDelete, onToggle }: any)
       <div className="task-list">
         {filteredTasks.length === 0 ? (
           <div className="empty-state">
-            <Icons.CheckSquare />
+            <EmptyArt kind="tasks" />
             <h3>{t('tasks.emptyTitle')}</h3>
             <p>{t('tasks.emptySubtitle')}</p>
           </div>

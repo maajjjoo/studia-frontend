@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { EmptyArt } from "../components/EmptyArt";
 import { Icons } from "../Icons";
 import { FocusSession } from "../types";
 import { formatTime } from "../utils/studyHelpers";
 import { useTranslation } from "../i18n/LanguageContext";
+import { DURATIONS } from "../useFocus";
+import type { CSSProperties } from "react";
 
 export function FocusScreen({ focus, profile }: any) {
   const { t, language } = useTranslation();
@@ -20,7 +23,8 @@ export function FocusScreen({ focus, profile }: any) {
   return (
     <div className="main-content">
       <div className="screen-header">
-        <div>
+        <div className="screen-title">
+          <span className="screen-icon" aria-hidden="true"><Icons.Timer /></span>
           <h1>{t('focus.title')}</h1>
           <p>{t('focus.subtitle')}</p>
         </div>
@@ -35,8 +39,12 @@ export function FocusScreen({ focus, profile }: any) {
           </div>
 
           <div className="focus-display">
-            <div className="focus-timer-large">
-              {formatTime(focus.timeLeft)}
+            <div
+              className="focus-timer-large"
+              style={{ '--p': `${Math.min(100, Math.max(0, (1 - focus.timeLeft / (DURATIONS[focus.mode as keyof typeof DURATIONS] || focus.timeLeft || 1)) * 100))}%` } as CSSProperties}
+            >
+              <span className="focus-time">{formatTime(focus.timeLeft)}</span>
+              <span className="focus-dial-mode">{getModeLabel(focus.mode)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
               {focus.isWebsitesBlocked && (
@@ -138,7 +146,7 @@ export function FocusScreen({ focus, profile }: any) {
             <div className="modal-overlay">
               <div className="modal-content" style={{ maxWidth: '440px' }}>
                 <div className="modal-header">
-                  <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: focus.uacPrompt.isError ? 'var(--color-destructive)' : 'var(--color-accent-soft)' }}>
+                  <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: focus.uacPrompt.isError ? 'var(--color-destructive)' : 'var(--color-accent-main)' }}>
                     <Icons.Shield />
                     {focus.uacPrompt.isError ? t('focus.uacErrorTitle') : t('focus.uacRequiredTitle')}
                   </h2>
@@ -167,13 +175,13 @@ export function FocusScreen({ focus, profile }: any) {
           <div className="fc-agenda">
             <div className="fc-agenda-header">
               <h3>{t('focus.historyToday')}</h3>
-              <span className="badge alta">{t('focus.completedCount', { count: todaySessions.length })}</span>
+              <span className="badge badge-accent">{t('focus.completedCount', { count: todaySessions.length })}</span>
             </div>
 
             <div className="fc-agenda-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
               {todaySessions.length === 0 ? (
-                <div className="empty-state">
-                  <Icons.TrendingUp />
+                <div className="empty-state empty-state-compact">
+                  <EmptyArt kind="focus" size="sm" />
                   <p>{t('focus.emptyHistory')}</p>
                 </div>
               ) : (

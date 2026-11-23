@@ -1,14 +1,30 @@
 /* --- CSS Variables & Theme System --- */
 :root {
   /* Layout & Shared Variables */
-  --sidebar-width: 250px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
+  --sidebar-width: 260px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
   --radius-lg: 20px;
-  --radius-xl: 28px;
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.05);
-  --transition-smooth: all 0.2s ease-in-out;
+  --radius-xl: 26px;
+  --radius-full: 999px;
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 160ms;
+  --dur-base: 280ms;
+  --dur-slow: 520ms;
+  --transition-smooth: all var(--dur-base) var(--ease-out-quart);
+
+  /* Depth (offset + soft blur, tinted toward the ink) */
+  --shadow-sm: 0 1px 2px rgba(52, 58, 64, 0.04), 0 4px 14px -4px rgba(52, 58, 64, 0.08);
+  --shadow-md: 0 2px 6px rgba(52, 58, 64, 0.04), 0 14px 34px -10px rgba(52, 58, 64, 0.14);
+  --shadow-lg: 0 4px 10px rgba(52, 58, 64, 0.05), 0 28px 60px -16px rgba(52, 58, 64, 0.22);
+
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 
   /* Global Neutrals (Light Mode Default) */
   --color-bg-base: #F8F9FA;
@@ -16,7 +32,8 @@
   --color-border: #E9ECEF;
   --color-text-main: #343A40;
   --color-text-muted: #868E96;
-  
+  --color-bg-hover: var(--color-hover-subtle);
+
   --color-destructive: #E03131;
   --color-destructive-bg: #FFF5F5;
 
@@ -24,39 +41,61 @@
   --color-modal-overlay: rgba(0, 0, 0, 0.35);
   --color-hover-subtle: rgba(0, 0, 0, 0.03);
 
+  /* Glass material */
+  --glass-bg: color-mix(in srgb, var(--color-accent-soft) 40%, rgba(255, 255, 255, 0.62));
+  --glass-bg-strong: color-mix(in srgb, var(--color-accent-soft) 30%, rgba(255, 255, 255, 0.86));
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-edge: rgba(52, 58, 64, 0.07);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-blur: blur(18px) saturate(160%);
+
   /* Theme A: Muted Rose (Default) */
   --color-accent-soft: #FDF3F5;
   --color-accent-main: #D48E9B;
   --color-accent-hover: #C27685;
   --color-btn-dark: #C27685;
+  --color-accent-soft-rgb: 253, 243, 245;
+
+  /* Accent-derived helpers */
+  --accent-glow: color-mix(in srgb, var(--color-accent-main) 40%, transparent);
+  --accent-wash: color-mix(in srgb, var(--color-accent-main) 24%, transparent);
+  --accent-tint: color-mix(in srgb, var(--color-accent-main) 12%, var(--color-accent-soft));
+  /* Deep accent: the hover shade pulled toward ink so white text reads on it (≥4.5:1) */
+  --accent-deep: color-mix(in srgb, var(--color-accent-hover) 74%, #1d1720);
+  --accent-grad: linear-gradient(135deg, var(--accent-deep) 0%, var(--color-accent-hover) 55%, var(--color-accent-main) 100%);
+  --on-accent: #ffffff;
+  --on-accent-muted: rgba(255, 255, 255, 0.82);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-accent-main) 35%, transparent);
 
   /* Card Colors */
-  --card-tasks-bg: #FFFFFF;
+  --card-tasks-bg: var(--glass-bg);
   --card-tasks-accent: var(--color-accent-main);
-  --card-calendar-bg: #FFFFFF;
+  --card-calendar-bg: var(--glass-bg);
   --card-calendar-accent: var(--color-accent-main);
-  --card-ai-bg: #FFFFFF;
-  --card-focus-bg: #FFFFFF;
-  --card-progress-bg: #FFFFFF;
+  --card-ai-bg: var(--glass-bg);
+  --card-focus-bg: var(--glass-bg);
+  --card-progress-bg: var(--glass-bg);
 
   /* Badges & Priorities */
   --prio-high-bg: #FFF5F5; --prio-high-text: #E03131;
-  --prio-medium-bg: #FDF3F5; --prio-medium-text: #D48E9B;
-  --prio-low-bg: #F8F9FA; --prio-low-text: #868E96;
-  
-  font-family: 'Inter', system-ui, sans-serif;
+  --prio-medium-bg: #FDF3F5; --prio-medium-text: #C27685;
+  --prio-low-bg: #F1F3F5; --prio-low-text: #868E96;
+
+  font-family: var(--font-family);
+  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
 }
 
 [data-theme="blue"] {
   /* Theme B: Muted Blue (Light) */
-  --color-accent-soft: #F3F8FC; 
+  --color-accent-soft: #F3F8FC;
   --color-accent-main: #7FA3C1;
   --color-accent-hover: #668CAE;
   --color-btn-dark: #668CAE;
+  --color-accent-soft-rgb: 243, 248, 252;
 
   /* Badges & Priorities */
-  --prio-medium-bg: #F3F8FC; --prio-medium-text: #7FA3C1;
+  --prio-medium-bg: #F3F8FC; --prio-medium-text: #668CAE;
 }
 
 /* ==========================================================================
@@ -73,29 +112,35 @@
   --color-destructive-bg: #3B1C1D;
 
   --color-track-bg: rgba(255, 255, 255, 0.08);
-  --color-modal-overlay: rgba(0, 0, 0, 0.65);
+  --color-modal-overlay: rgba(5, 6, 8, 0.6);
   --color-hover-subtle: rgba(255, 255, 255, 0.05);
 
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px -6px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3), 0 16px 36px -10px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.35), 0 30px 64px -16px rgba(0, 0, 0, 0.65);
 
-  /* Card Colors (Dark) */
-  --card-tasks-bg: #1A1D24;
-  --card-calendar-bg: #1A1D24;
-  --card-ai-bg: #1A1D24;
-  --card-focus-bg: #1A1D24;
-  --card-progress-bg: #1A1D24;
+  --glass-bg: color-mix(in srgb, var(--color-accent-soft) 35%, rgba(26, 29, 36, 0.6));
+  --glass-bg-strong: color-mix(in srgb, var(--color-accent-soft) 25%, rgba(26, 29, 36, 0.86));
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-edge: rgba(255, 255, 255, 0.06);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
   /* Theme A: Muted Rose (Dark Mode) */
   --color-accent-soft: #2D1F24;
   --color-accent-main: #E09BA8;
   --color-accent-hover: #EBB0BC;
   --color-btn-dark: #C27685;
+  --color-accent-soft-rgb: 45, 31, 36;
+
+  --accent-wash: color-mix(in srgb, var(--color-accent-main) 15%, transparent);
+  --accent-tint: color-mix(in srgb, var(--color-accent-main) 14%, var(--color-surface));
+  --accent-deep: color-mix(in srgb, var(--color-btn-dark) 70%, #15121a);
+  --accent-grad: linear-gradient(135deg, var(--accent-deep) 0%, var(--color-btn-dark) 62%, color-mix(in srgb, var(--color-btn-dark) 78%, var(--color-accent-main)) 100%);
 
   /* Badges & Priorities (Dark) */
   --prio-high-bg: #3B1C1D; --prio-high-text: #FF6B6B;
   --prio-medium-bg: #2D1F24; --prio-medium-text: #E09BA8;
-  --prio-low-bg: #1A1D24; --prio-low-text: #9AA2AB;
+  --prio-low-bg: #22262E; --prio-low-text: #9AA2AB;
 }
 
 [data-color-scheme="dark"][data-theme="blue"] {
@@ -104,25 +149,36 @@
   --color-accent-main: #8FB4D4;
   --color-accent-hover: #A2C3E0;
   --color-btn-dark: #668CAE;
+  --color-accent-soft-rgb: 27, 38, 51;
 
   /* Badges & Priorities (Dark Blue) */
   --prio-medium-bg: #1B2633; --prio-medium-text: #8FB4D4;
 }
 
-/* Base resets & Native dark scrollbar */
+/* ==========================================================================
+   Base resets & browser surfaces
+   ========================================================================== */
+html, body { height: 100%; }
+
 body {
   margin: 0; padding: 0; background-color: var(--color-bg-base); color: var(--color-text-main);
   overflow: hidden; user-select: none;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color var(--dur-base) ease, color var(--dur-base) ease;
 }
 
 [data-color-scheme="dark"] body {
   color-scheme: dark;
 }
 
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; }
+
+::selection { background: color-mix(in srgb, var(--color-accent-main) 30%, transparent); color: var(--color-text-main); }
+
 input, textarea, select {
   font-family: inherit;
   color: var(--color-text-main);
+  caret-color: var(--color-accent-main);
+  user-select: text;
 }
 
 select option {
@@ -130,19 +186,45 @@ select option {
   color: var(--color-text-main);
 }
 
+button { font-family: inherit; }
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-text-muted) 28%, transparent);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-accent-main) 60%, transparent);
+  background-clip: padding-box;
 }
 
+/* Shared glass recipe */
+.glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-edge), var(--shadow-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { EmptyArt } from "./components/EmptyArt";
 import { Icons } from './Icons';
 import { StudentProfile, ClassSession } from './types';
 import {
@@ -48,7 +49,8 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
   return (
     <div className="main-content">
       <div className="screen-header">
-        <div>
+        <div className="screen-title">
+          <span className="screen-icon" aria-hidden="true"><Icons.LayoutGrid /></span>
           <h1>{t('timetable.title')}</h1>
           <p>{t('timetable.subtitle')}</p>
         </div>
@@ -97,13 +99,14 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
       ) : (
         <div className="timetable-grid">
           {[1, 2, 3, 4, 5, 6, 7].map(dayNum => {
+            const todayNum = new Date().getDay() || 7;
             const dayName = formatDay(dayNum, { weekday: 'long' });
             const dayClasses = profile.classTimetable
               .filter(c => c.dayOfWeek === dayNum)
               .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
             return (
-              <div key={dayNum} className="dash-card timetable-day-card">
+              <div key={dayNum} className={`dash-card timetable-day-card ${dayNum === todayNum ? 'is-today' : ''} ${dayClasses.length === 0 ? 'is-empty' : ''}`}>
                 <h3 className="timetable-day-header">
                   {dayName}
                   <span className="badge" style={{ background: 'var(--color-bg-base)' }}>{dayClasses.length}</span>
@@ -111,7 +114,10 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {dayClasses.length === 0 ? (
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center', margin: '0.5rem 0' }}>{t('timetable.emptyDay')}</p>
+                    <div className="empty-day">
+                      <EmptyArt kind="free" size="sm" />
+                      <p>{t('timetable.emptyDay')}</p>
+                    </div>
                   ) : dayClasses.map(c => (
                     <div
                       key={c.id}
@@ -125,9 +131,9 @@ export function TimetableScreen({ profile, onAddClass, onUpdateClass, onDeleteCl
                       </p>
                       {(c.room || c.teacher || c.description) && (
                         <div className="timetable-class-meta">
-                          {c.room && <span>📍 {c.room}</span>}
-                          {c.teacher && <span>👤 {c.teacher}</span>}
-                          {c.description && <span>📝 {c.description}</span>}
+                          {c.room && <span><Icons.MapPin /> {c.room}</span>}
+                          {c.teacher && <span><Icons.User /> {c.teacher}</span>}
+                          {c.description && <span><Icons.FileText /> {c.description}</span>}
                         </div>
                       )}
                     </div>

@@ -1,8 +1,11 @@
 import { useState, useMemo } from "react";
+import { EmptyArt } from "../components/EmptyArt";
 import { Icons } from "../Icons";
 import { Activity } from "../types";
 import { ActivityModal } from "../components/ActivityModal";
 import { useTranslation } from "../i18n/LanguageContext";
+import { en } from "../i18n/en";
+import { es } from "../i18n/es";
 
 export function CalendarScreen({ activities, onAdd, onUpdate, onDelete }: any) {
   const { t, language, formatDate } = useTranslation();
@@ -29,7 +32,8 @@ export function CalendarScreen({ activities, onAdd, onUpdate, onDelete }: any) {
   const monthNameRaw = new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'es-ES', { month: 'long', year: 'numeric' }).format(viewMonthDate);
   const monthName = monthNameRaw.charAt(0).toUpperCase() + monthNameRaw.slice(1);
 
-  const daysLetters = (t('calendar.daysLetters') as unknown as string[]) || ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+  // t() only resolves strings, so read the weekday letters straight from the dictionaries.
+  const daysLetters = (language === 'en' ? en : es).calendar.daysLetters;
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
@@ -52,7 +56,8 @@ export function CalendarScreen({ activities, onAdd, onUpdate, onDelete }: any) {
   return (
     <div className="main-content">
       <div className="screen-header">
-        <div>
+        <div className="screen-title">
+          <span className="screen-icon" aria-hidden="true"><Icons.Calendar /></span>
           <h1>{t('calendar.title')}</h1>
           <p>{t('calendar.subtitle')}</p>
         </div>
@@ -104,9 +109,10 @@ export function CalendarScreen({ activities, onAdd, onUpdate, onDelete }: any) {
           </div>
           <div className="fc-agenda-list">
             {dayActivities.length === 0 ? (
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>
-                {t('calendar.noEventsToday')}
-              </p>
+              <div className="empty-state empty-state-compact">
+                <EmptyArt kind="calendar" size="sm" />
+                <p>{t('calendar.noEventsToday')}</p>
+              </div>
             ) : dayActivities.map((act: Activity) => (
               <div key={act.id} className="fc-agenda-item">
                 <span className="fc-agenda-time">{act.startTime}</span>

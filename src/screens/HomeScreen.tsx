@@ -1,4 +1,5 @@
 import { Icons } from "../Icons";
+import { EmptyArt } from "../components/EmptyArt";
 import { Task, Activity, FocusSession } from "../types";
 import { formatTime, getWeeklyFocusData } from "../utils/studyHelpers";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -77,6 +78,9 @@ export function HomeScreen({
   for (let i = 0; i < startOffset; i++) miniCal.push(null);
   for (let i = 1; i <= daysInMonth; i++) miniCal.push(i);
 
+  const pendingCount = tasks.filter((t: Task) => t.status === 'pending').length;
+  const todayEventsCount = [...activities, ...todayClasses].filter((a: any) => a.date === localTodayStr).length;
+
   const monthName = formatDate(todayDateObj, { month: 'long', year: 'numeric' }).toUpperCase();
   const firstName = profile?.name ? profile.name.split(' ')[0] : t('nav.studentRole');
 
@@ -87,6 +91,23 @@ export function HomeScreen({
           <span className="super-title">{t('dashboard.superTitle')}</span>
           <h1>{t('dashboard.greeting', { name: firstName })}</h1>
           <p>{t('dashboard.subtitle')}</p>
+          <div className="hero-stats">
+            <button className="hero-stat" onClick={() => onNavigate('tareas')}>
+              <span className="hero-stat-icon"><Icons.CheckSquare /></span>
+              <span className="hero-stat-value">{pendingCount}</span>
+              <span className="hero-stat-label">{t('dashboard.heroPending')}</span>
+            </button>
+            <button className="hero-stat" onClick={() => onNavigate('enfoque')}>
+              <span className="hero-stat-icon"><Icons.Flame /></span>
+              <span className="hero-stat-value">{todaySessions.length}</span>
+              <span className="hero-stat-label">{t('dashboard.heroSessions')}</span>
+            </button>
+            <button className="hero-stat" onClick={() => onNavigate('calendario')}>
+              <span className="hero-stat-icon"><Icons.Calendar /></span>
+              <span className="hero-stat-value">{todayEventsCount}</span>
+              <span className="hero-stat-label">{t('dashboard.heroEvents')}</span>
+            </button>
+          </div>
         </div>
         <div className="header-actions">
           <div className="header-date">
@@ -149,7 +170,12 @@ export function HomeScreen({
                   {getPriorityLabel(tItem.priority)}
                 </span>
               </div>
-            )) : <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>{t('dashboard.noPendingTasks')}</p>}
+            )) : (
+              <div className="empty-state empty-state-compact">
+                <EmptyArt kind="tasks" size="sm" />
+                <p>{t('dashboard.noPendingTasks')}</p>
+              </div>
+            )}
           </div>
 
           <a className="card-link" onClick={() => onNavigate("tareas")}>{t('dashboard.viewAll')}</a>
@@ -192,7 +218,12 @@ export function HomeScreen({
                     <p>{getCategoryLabel(a.category)}</p>
                   </div>
                 </div>
-              )) : <p style={{ fontSize: '0.8rem' }}>{t('dashboard.noUpcoming')}</p>}
+              )) : (
+                <div className="empty-state empty-state-compact">
+                  <EmptyArt kind="calendar" size="sm" />
+                  <p>{t('dashboard.noUpcoming')}</p>
+                </div>
+              )}
             </div>
           </div>
           <a className="card-link" onClick={() => onNavigate("calendario")}>{t('dashboard.viewCalendar')}</a>
@@ -205,7 +236,7 @@ export function HomeScreen({
           <p style={{ margin: 0, fontSize: '0.95rem' }}>{t('dashboard.aiNeedOrganize')}</p>
           <div className="ai-input-wrapper">
             <input type="text" className="ai-input" placeholder={t('dashboard.aiPlaceholder')} onClick={() => onNavigate('asistente')} readOnly />
-            <button className="ai-btn" onClick={() => onNavigate('asistente')}>→</button>
+            <button className="ai-btn" onClick={() => onNavigate('asistente')}><Icons.ArrowRight /></button>
           </div>
           <div className="ai-tags">
             <button className="ai-tag" onClick={() => onNavigate('asistente')}>{t('dashboard.suggestedTags.planner')}</button>
@@ -257,8 +288,8 @@ export function HomeScreen({
                 const h = Math.round((secs / maxWd) * 100);
                 return (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', flex: 1 }} title={`${Math.round(secs / 60)} min`}>
-                    <div style={{ width: '16px', height: '100px', background: 'rgba(0,0,0,0.05)', borderRadius: '8px', display: 'flex', alignItems: 'flex-end' }}>
-                      <div style={{ width: '100%', height: `${h}%`, background: h > 80 ? 'var(--color-btn-dark)' : 'var(--color-accent-main)', opacity: h > 0 ? (h > 80 ? 1 : 0.6) : 0, borderRadius: '8px', transition: 'height 0.3s ease' }}></div>
+                    <div style={{ width: '16px', height: '100px', background: 'var(--color-track-bg)', borderRadius: '8px', display: 'flex', alignItems: 'flex-end' }}>
+                      <div style={{ width: '100%', height: `${h}%`, background: h > 80 ? 'var(--color-btn-dark)' : 'var(--color-accent-main)', opacity: h > 0 ? (h > 80 ? 1 : 0.6) : 0, borderRadius: '8px', transition: 'height 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}></div>
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
                       {formatDay(i + 1, { weekday: 'narrow' })}

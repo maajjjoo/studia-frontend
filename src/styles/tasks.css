@@ -1,21 +1,76 @@
 /* --- Tasks Screen Styles --- */
-.tasks-filters { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
-.filter-btn { padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--color-border); background: var(--color-surface); font-weight: 600; font-size: 0.85rem; cursor: pointer; color: var(--color-text-muted); }
-.filter-btn.active { background: var(--color-accent-soft); color: var(--color-accent-main); border-color: transparent; }
-
-.task-list { display: flex; flex-direction: column; gap: 0.75rem; }
-.task-item {
-  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md);
-  padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; transition: var(--transition-smooth);
+.tasks-filters {
+  display: inline-flex; gap: 0.25rem; margin-bottom: 1.5rem; padding: 0.3rem;
+  background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-full);
+  box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-edge), var(--shadow-sm);
 }
-.task-item:hover { border-color: var(--color-text-muted); }
-.task-checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--color-border); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.task-checkbox.completed { background: var(--color-accent-main); border-color: var(--color-accent-main); color: white; }
-.task-checkbox svg { width: 14px; height: 14px; opacity: 0; }
-.task-checkbox.completed svg { opacity: 1; }
-.task-content { flex: 1; }
-.task-title { margin: 0 0 0.25rem 0; font-size: 1rem; font-weight: 600; color: var(--color-text-main); }
-.task-item.is-completed .task-title { text-decoration: line-through; color: var(--color-text-muted); }
-.task-meta { font-size: 0.8rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 1rem; }
-.task-actions { display: flex; gap: 0.5rem; opacity: 0; }
-.task-item:hover .task-actions { opacity: 1; }
+.filter-btn {
+  padding: 0.5rem 1.1rem; border-radius: var(--radius-full); border: none; background: transparent;
+  font-weight: 650; font-size: 0.85rem; cursor: pointer; color: var(--color-text-muted);
+  transition: background-color var(--dur-base) var(--ease-out-quart), color var(--dur-fast) ease, box-shadow var(--dur-base) ease, transform var(--dur-base) var(--ease-spring);
+}
+.filter-btn:hover { color: var(--color-text-main); }
+.filter-btn:active { transform: scale(0.95); }
+.filter-btn.active {
+  background: var(--color-btn-dark); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 6px 14px -8px var(--accent-glow);
+}
+
+.task-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.task-item {
+  background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+  box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-edge), var(--shadow-sm);
+  padding: 0.95rem 1.25rem; display: flex; align-items: center; gap: 1rem;
+  transition: transform var(--dur-base) var(--ease-out-quart), box-shadow var(--dur-base) var(--ease-out-quart), opacity var(--dur-base) ease;
+  animation: rowIn var(--dur-slow) var(--ease-out-expo) backwards;
+}
+.task-item:nth-child(2) { animation-delay: 40ms; }
+.task-item:nth-child(3) { animation-delay: 80ms; }
+.task-item:nth-child(4) { animation-delay: 120ms; }
+.task-item:nth-child(5) { animation-delay: 160ms; }
+.task-item:nth-child(n+6) { animation-delay: 200ms; }
+.task-item:hover { transform: translateY(-2px); box-shadow: var(--glass-highlight), 0 0 0 1px color-mix(in srgb, var(--color-accent-main) 35%, transparent), var(--shadow-md); }
+.task-item.is-completed { opacity: 0.72; }
+.task-item.is-completed:hover { opacity: 1; }
+
+.task-checkbox {
+  width: 24px; height: 24px; border-radius: 8px; flex-shrink: 0; box-sizing: border-box;
+  border: 2px solid color-mix(in srgb, var(--color-text-muted) 45%, var(--color-border));
+  cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--color-accent-main);
+  transition: background-color var(--dur-base) ease, border-color var(--dur-base) ease, transform var(--dur-base) var(--ease-spring), box-shadow var(--dur-base) ease;
+}
+.task-checkbox:hover { border-color: var(--color-accent-main); transform: scale(1.08); }
+.task-checkbox:active { transform: scale(0.85); }
+.task-checkbox.completed {
+  background: linear-gradient(140deg, var(--color-accent-main), var(--color-btn-dark)); border-color: transparent; color: white;
+  box-shadow: 0 4px 12px -4px var(--accent-glow);
+  animation: checkPop var(--dur-slow) var(--ease-spring);
+}
+@keyframes checkPop { 0% { transform: scale(0.7); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.task-checkbox svg { width: 14px; height: 14px; opacity: 0; stroke-width: 3; stroke-dasharray: 24; stroke-dashoffset: 24; transition: opacity var(--dur-fast) ease; }
+.task-checkbox:hover:not(.completed) svg { opacity: 0.5; stroke-dashoffset: 0; }
+.task-checkbox.completed svg { opacity: 1; stroke-dashoffset: 0; transition: stroke-dashoffset 420ms var(--ease-out-expo) 80ms, opacity var(--dur-fast) ease; }
+
+.task-content { flex: 1; min-width: 0; }
+.task-title {
+  margin: 0 0 0.3rem 0; font-family: var(--font-family); font-size: 0.98rem; font-weight: 600; color: var(--color-text-main);
+  text-decoration-line: line-through; text-decoration-color: transparent; text-decoration-thickness: 1.5px;
+  transition: text-decoration-color var(--dur-slow) ease, color var(--dur-base) ease;
+  overflow-wrap: anywhere;
+}
+.task-item.is-completed .task-title { color: var(--color-text-muted); text-decoration-color: currentColor; }
+.task-meta { font-size: 0.8rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; }
+.task-meta > span:not(.badge) { display: inline-flex; align-items: center; gap: 0.3rem; }
+.task-meta svg { width: 13px; height: 13px; }
+.task-actions { display: flex; gap: 0.25rem; opacity: 0; transform: translateX(6px); transition: opacity var(--dur-base) ease, transform var(--dur-base) var(--ease-out-quart); }
+.task-item:hover .task-actions, .task-item:focus-within .task-actions { opacity: 1; transform: none; }
+.fc-agenda-item .task-actions { transform: none; }
+
+/* Completing a task sends a small ring out from the checkbox */
+.task-checkbox { position: relative; }
+.task-checkbox.completed::after {
+  content: ""; position: absolute; inset: -2px; border-radius: 10px; pointer-events: none;
+  border: 2px solid var(--color-accent-main);
+  animation: checkBurst 620ms var(--ease-out-quart) forwards;
+}
+@keyframes checkBurst { from { transform: scale(1); opacity: 0.9; } to { transform: scale(2.1); opacity: 0; } }

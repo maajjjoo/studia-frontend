@@ -221,10 +221,11 @@ export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppea
 
   return (
     <div className="main-content" style={{paddingBottom: '4rem', display: 'flex', flexDirection: 'column'}}>
-      <div className="screen-header" style={{borderBottom: 'none', paddingBottom: 0, marginBottom: '2rem'}}>
-        <div>
-          <h1 style={{margin: '0 0 0.5rem 0'}}>{t('settings.title')}</h1>
-          <p style={{color: 'var(--color-text-muted)', margin: 0}}>{t('settings.subtitle')}</p>
+      <div className="screen-header" style={{marginBottom: '2rem'}}>
+        <div className="screen-title">
+          <span className="screen-icon" aria-hidden="true"><Icons.Settings /></span>
+          <h1>{t('settings.title')}</h1>
+          <p>{t('settings.subtitle')}</p>
         </div>
         {isDirty && (
           <div style={{display: 'flex', gap: '1rem'}}>
@@ -242,12 +243,12 @@ export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppea
 
       <div style={{display: 'flex', gap: '4rem', flex: 1}}>
         {/* Left Navigation */}
-        <div style={{width: '240px', display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
+        <div className="settings-nav" style={{width: '240px', display: 'flex', flexDirection: 'column', gap: '0.25rem'}}>
           <button className={`nav-item ${activeTab === 'general' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('general')}>
             <Icons.Settings /> {t('settings.tabGeneral')}
           </button>
           <button className={`nav-item ${activeTab === 'apariencia' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('apariencia')}>
-            <Icons.Database /> {t('settings.tabAppearance')}
+            <Icons.Palette /> {t('settings.tabAppearance')}
           </button>
           <button className={`nav-item ${activeTab === 'academico' ? 'active' : ''}`} style={{justifyContent: 'flex-start'}} onClick={() => setActiveTab('academico')}>
             <Icons.Book /> {t('settings.tabAcademic')}
@@ -265,7 +266,7 @@ export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppea
               {/* Account Section */}
               <div>
                 <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.accountSection')}</h4>
-                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                <div style={{background: 'var(--glass-bg-strong)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
                     <div>
@@ -297,7 +298,7 @@ export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppea
               {/* Language Section */}
               <div>
                 <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.languageSection')}</h4>
-                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                <div style={{background: 'var(--glass-bg-strong)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                     <div>
                       <div style={{fontWeight: 500, color: 'var(--color-text-main)'}}>{t('settings.languageTitle')}</div>
@@ -332,7 +333,7 @@ export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppea
               {/* Theme & Appearance Section */}
               <div>
                 <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.tabAppearance')}</h4>
-                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                <div style={{background: 'var(--glass-bg-strong)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
                   {/* Modo de interfaz */}
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
@@ -382,7 +383,7 @@ export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppea
               {/* Preferences Section */}
               <div>
                 <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.focusPrefsSection')}</h4>
-                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                <div style={{background: 'var(--glass-bg-strong)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1.5rem', borderBottom: '1px solid var(--color-border)'}}>
                     <div>
@@ -428,7 +429,7 @@ export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppea
               {/* Materias Section */}
               <div>
                 <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.subjectsSection')}</h4>
-                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                <div style={{background: 'var(--glass-bg-strong)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
                   <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
                     <div style={{display: 'flex', gap: '0.5rem'}}>
@@ -465,7 +466,7 @@ export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppea
               {/* Disponibilidad Section */}
               <div>
                 <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.availabilitySection')}</h4>
-                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                <div style={{background: 'var(--glass-bg-strong)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
                   
                   <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
                     {(formData.studyAvailability || []).map((avail, i) => (
@@ -502,7 +503,7 @@ export function SettingsScreen({ theme, onChangeTheme, appearance, onChangeAppea
               <div>
                 <h4 style={{fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text-main)', margin: '0 0 1rem 0'}}>{t('settings.appBlockingTitle')}</h4>
 
-                <div style={{background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                <div style={{background: 'var(--glass-bg-strong)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
 
                   <div style={{background: 'rgba(var(--color-accent-soft-rgb), 0.08)', border: '1px solid rgba(var(--color-accent-soft-rgb), 0.2)', borderRadius: 'var(--radius-sm)', padding: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start'}}>
                     <span style={{color: 'var(--color-accent-soft)', width: '16px', height: '16px', display: 'flex', marginTop: '0.1rem'}}><Icons.Shield /></span>
