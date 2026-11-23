@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { userKey } from './utils/userStorage';
 import { FocusSession, FocusMode } from './types';
 import { invoke } from '@tauri-apps/api/core';
 
-const DURATIONS = {
+export const DURATIONS = {
   focus: 25 * 60,
   shortBreak: 5 * 60,
   longBreak: 15 * 60,
@@ -65,7 +66,7 @@ export function useFocus() {
       unmountCleanupTimeoutRef.current = null;
     }
 
-    const saved = localStorage.getItem('studia_focus_v1');
+    const saved = localStorage.getItem(userKey('studia_focus_v1'));
     if (saved) {
       try {
         setSessions(JSON.parse(saved));
@@ -185,7 +186,7 @@ export function useFocus() {
         completed: true
       };
       const updated = [...prev, newSession];
-      localStorage.setItem('studia_focus_v1', JSON.stringify(updated));
+      localStorage.setItem(userKey('studia_focus_v1'), JSON.stringify(updated));
       return updated;
     });
   }, []);

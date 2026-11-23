@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import "./App.css";
 import { useTheme } from "./useTheme";
 import { useTasks } from "./useTasks";
@@ -20,11 +21,35 @@ import { Sidebar } from "./components/Sidebar";
 import { TaskModal } from "./components/TaskModal";
 import { ActivityModal } from "./components/ActivityModal";
 import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
+import { useAuth, type Account } from "./useAuth";
+import { AuthScreen } from "./AuthScreen";
 
-function AppContent() {
+function AppContent({ account, onLogout, themeState }: { account: Account; onLogout: () => void; themeState: ReturnType<typeof useTheme> }) {
   const [activeTab, setActiveTab] = useState("inicio");
+
+  // Same navigation as before; it only adds a cross-screen animation where the webview supports it.
+  const navigate = (tab: string) => {
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (tab === activeTab || !doc.startViewTransition || reduced) { setActiveTab(tab); return; }
+    // The tab change must never wait on the animation: if the webview stalls the
+    // transition, the safety timer applies it anyway (the second call is a no-op).
+    let applied = false;
+    const apply = () => {
+      if (applied) return;
+      applied = true;
+      flushSync(() => setActiveTab(tab));
+    };
+    try {
+      doc.startViewTransition(apply);
+    } catch {
+      apply();
+      return;
+    }
+    window.setTimeout(apply, 250);
+  };
   const { language } = useTranslation();
-  const { theme, changeTheme, appearance, changeAppearance, resolvedAppearance, toggleAppearance } = useTheme();
+  const { theme, changeTheme, appearance, changeAppearance, resolvedAppearance, toggleAppearance } = themeState;
   const { profile, isLoaded: profileLoaded, saveProfile, addClassSession, updateClassSession, deleteClassSession } = useProfile();
   const { tasks, isLoaded: tasksLoaded, addTask, updateTask, deleteTask, toggleTaskStatus } = useTasks();
   const { activities, isScheduleLoaded, addActivity, addActivities, updateActivity, deleteActivity } = useSchedule();
@@ -56,7 +81,7 @@ function AppContent() {
             appearance={appearance}
             resolvedAppearance={resolvedAppearance}
             onToggleAppearance={toggleAppearance}
-            onNavigate={setActiveTab}
+            onNavigate={navigate}
             onOpenNewTask={() => setIsTaskModalOpen(true)}
             onOpenNewActivity={() => setIsActivityModalOpen(true)}
             onToggleTask={toggleTaskStatus}
@@ -72,7 +97,7 @@ function AppContent() {
             activities={activities}
             onSaveBlocks={(blocks) => {
               addActivities(blocks);
-              setActiveTab('calendario');
+              navigate('calendario');
             }}
           />
         );
@@ -115,7 +140,7 @@ function AppContent() {
             appearance={appearance}
             resolvedAppearance={resolvedAppearance}
             onToggleAppearance={toggleAppearance}
-            onNavigate={setActiveTab}
+            onNavigate={navigate}
             onOpenNewTask={() => setIsTaskModalOpen(true)}
             onOpenNewActivity={() => setIsActivityModalOpen(true)}
             onToggleTask={toggleTaskStatus}
@@ -126,7 +151,7 @@ function AppContent() {
 
   return (
     <div className="layout">
-      <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} profile={profile} />
+      <Sidebar activeTab={activeTab} onSelectTab={navigate} profile={profile} account={account} onLogout={onLogout} />
 
       {renderContent()}
 
@@ -136,10 +161,26 @@ function AppContent() {
   );
 }
 
+function AuthGate() {
+  const themeState = useTheme();
+  const { account, login, register, enter, logout } = useAuth();
+
+  if (!account) {
+    return (
+      <div className="layout auth-layout">
+        <AuthScreen onLogin={login} onRegister={register} onEnter={enter} />
+      </div>
+    );
+  }
+
+  // Keyed by account so every hook reloads that account's own data.
+  return <AppContent key={account.id} account={account} onLogout={logout} themeState={themeState} />;
+}
+
 export default function App() {
   return (
     <LanguageProvider>
-      <AppContent />
+      <AuthGate />
     </LanguageProvider>
   );
 }

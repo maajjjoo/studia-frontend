@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { userKey } from './utils/userStorage';
 import { StudentProfile } from './types';
 
 export function useProfile() {
@@ -6,7 +7,7 @@ export function useProfile() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('studia_profile_v1');
+    const saved = localStorage.getItem(userKey('studia_profile_v1'));
     if (saved) {
       try {
         setProfile(JSON.parse(saved));
@@ -19,7 +20,7 @@ export function useProfile() {
 
   const saveProfile = (newProfile: StudentProfile) => {
     setProfile(newProfile);
-    localStorage.setItem('studia_profile_v1', JSON.stringify(newProfile));
+    localStorage.setItem(userKey('studia_profile_v1'), JSON.stringify(newProfile));
   };
 
   const addClassSession = (session: Omit<import('./types').ClassSession, 'id'>) => {

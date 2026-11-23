@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { userKey } from './utils/userStorage';
 import type { AiMessage } from './types.ts';
 import type { AiContextData, AiServiceError } from './utils/aiClient.ts';
 import {
@@ -43,7 +44,7 @@ export function useAi(currentLanguage?: 'es' | 'en') {
   }, [currentLanguage]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('studia_ai_v1');
+    const saved = localStorage.getItem(userKey('studia_ai_v1'));
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -62,7 +63,7 @@ export function useAi(currentLanguage?: 'es' | 'en') {
 
   const saveMessages = useCallback((newMessages: AiMessage[]) => {
     setMessages(newMessages);
-    localStorage.setItem('studia_ai_v1', JSON.stringify(newMessages));
+    localStorage.setItem(userKey('studia_ai_v1'), JSON.stringify(newMessages));
   }, []);
 
   const clearHistory = useCallback(() => {
